@@ -1,18 +1,18 @@
 use crate::dsl::{expression::Expression, keywords as kw, traits::Code};
 use proc_macro2::TokenStream as TS;
 use quote::quote;
-use syn::{braced, parse::Parse};
+use syn::{braced, parse::Parse,Token};
 
 pub struct Check {
     keyword: kw::check,
-    conditions: Vec<Condition>,
+    conditions: Conditions,
 }
-pub enum Symbol {
+enum Symbol {
     Equal,
     EqualOr(OtherSymbol),
     Other(OtherSymbol),
 }
-pub enum OtherSymbol {
+enum OtherSymbol {
     Less,
     Greater,
 }
@@ -30,7 +30,7 @@ enum Conditions {
     Condition(Condition),
 }
 
-pub struct Condition {
+struct Condition {
     left: Expression,
     symbol: Symbol,
     right: Expression,
@@ -43,6 +43,26 @@ enum LoopType {
 enum JoinType {
     Or,
     And,
+}
+
+impl Parse for JoinType {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        if let Ok(_) = input.parse::<kw::and>() {
+            Ok(JoinType::And)
+        } else {
+            input.parse::<kw::or>()?;
+            Ok(JoinType::Or)
+                
+        }
+    }
+}
+impl Code for JoinType {
+    fn get_code(&self) -> proc_macro2::TokenStream {
+        match self {
+            JoinType::Or => quote! {||},
+            JoinType::And => quote! {&&},
+        }
+    }
 }
 
 impl Parse for OtherSymbol {
@@ -105,11 +125,70 @@ impl Parse for Condition {
         })
     }
 }
+
 impl Code for Condition {
     fn get_code(&self) -> proc_macro2::TokenStream {
         let left = self.left.get_code().clone();
         let symbol = self.symbol.get_code().clone();
         let right = self.right.get_code().clone();
-        quote! { assert!(#left #symbol #right)}
+        quote! { #left #symbol #right }
+    }
+}
+
+
+fn is_for_each(input: &syn::parse::ParseStream) -> bool {
+    input.peek(Token![for]) && input.peek2(kw::each)
+}
+fn is_in_any(input: &syn::parse::ParseStream) -> bool {
+    input.peek(Token![in])&&input.peek2(kw::any)
+}
+
+fn parse_loop_condition(input: syn::parse::ParseStream) {
+    todo!();
+}
+
+impl Parse for Conditions {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+
+        if is_for_each(&input) || is_in_any(&input) {
+            parse_loop_condition(input);
+        }
+        let condition = input.parse::<Condition>()?;
+        if input.peek(kw::or) || input.peek(kw::and){
+            let join_type = input.parse::<JoinType>()?;
+            return Ok(Conditions::CompoundCondition { left_condition: condition, join: join_type, right_condition: Box::new(input.parse()?)})
+        }
+        Ok(Conditions::Condition(condition))
+    }
+}
+
+impl Code for Conditions {
+    fn get_code(&self) -> proc_macro2::TokenStream {
+        match self {
+            Conditions::LoopCondition { loop_type, condition } => todo!(),
+            Conditions::CompoundCondition { left_condition, join, right_condition } => {
+                let left = left_condition.get_code();
+                let join = join.get_code();
+                let right = right_condition.get_code();
+                quote! { (#left) #join #right }
+            },
+            Conditions::Condition(condition) => condition.get_code(),
+        }
+    }
+}
+
+impl Parse for Check {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let kw = input.parse::<kw::check>()?;
+        let conditions;
+        braced!(conditions in input);
+        let conditions = conditions.parse::<Conditions>()?;
+        Ok(Check { keyword: kw, conditions })
+        
+    }
+}
+impl Code for Check {
+    fn get_code(&self) -> proc_macro2::TokenStream {
+        self.conditions.get_code()
     }
 }

@@ -9,6 +9,7 @@ syn::custom_keyword!(less);
 syn::custom_keyword!(greater);
 syn::custom_keyword!(than);
 syn::custom_keyword!(or);
+syn::custom_keyword!(and);
 // looping trough iterators in condition
 // keyword for
 syn::custom_keyword!(each);
