@@ -1,9 +1,12 @@
 use rusty_check::rusty_check;
-#[test]
-fn test_one(){
-    rusty_check!{
+rusty_check!{
+    case testing {
+        given {
+            a = 22,
+            b = 33
+        }
         check {
-            1 equal 2 or 2 equal 3 and 2 less than 3
+            a less than b
         }
     }
 }

@@ -6,6 +6,7 @@ use syn::{braced, parse::Parse,Token};
 pub struct Check {
     keyword: kw::check,
     conditions: Conditions,
+    comment: String
 }
 enum Symbol {
     Equal,
@@ -18,6 +19,7 @@ enum OtherSymbol {
 }
 
 enum Conditions {
+    // TODO: need to work on loop condition
     LoopCondition {
         loop_type: LoopType,
         condition: Box<Conditions>,
@@ -182,13 +184,17 @@ impl Parse for Check {
         let kw = input.parse::<kw::check>()?;
         let conditions;
         braced!(conditions in input);
+        let comment = conditions.to_string();
         let conditions = conditions.parse::<Conditions>()?;
-        Ok(Check { keyword: kw, conditions })
+        Ok(Check { keyword: kw,comment ,conditions })
         
     }
 }
 impl Code for Check {
     fn get_code(&self) -> proc_macro2::TokenStream {
-        self.conditions.get_code()
+        let conditions = self.conditions.get_code();
+        let comment = self.comment.clone();
+        // TODO: Add custom message to assert where it would show condition with changed values
+        quote!{assert!(#conditions,#comment);}
     }
 }
