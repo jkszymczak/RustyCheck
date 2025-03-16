@@ -1,0 +1,11 @@
+[package]
+name = "rusty_check"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+mockall = { version = "0.13.1", optional = true}
+rusty_check_macros = {path = "../rusty_check_macros"}
+
+[features]
+mocking = ["dep:mockall"]
