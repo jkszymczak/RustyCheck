@@ -13,7 +13,6 @@ syn::custom_keyword!(and);
 // looping trough iterators in condition
 // keyword for
 syn::custom_keyword!(each);
-// keyword in
 syn::custom_keyword!(any);
 
 // expression keywords
