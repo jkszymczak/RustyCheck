@@ -1,5 +1,9 @@
 repos:
 - repo: https://github.com/jkszymczak/pre-commit-hooks
-  rev: 0.0.2
+  rev: 8f77fbdc988ea33cd4005686aef5f732622c1f32
   hooks:
       - id: format-code
+        args: [-t,"*.rs",rustfmt]
+        verbose: true
+        exclude_types: [yaml]
+
