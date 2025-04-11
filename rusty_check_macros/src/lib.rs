@@ -1,9 +1,5 @@
 mod dsl;
-use dsl::{
-    case::Case,
-    rusty_check::RustyCheck,
-    traits::Code,
-};
+use dsl::{case::Case, rusty_check::RustyCheck, traits::Code};
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::parse_macro_input;

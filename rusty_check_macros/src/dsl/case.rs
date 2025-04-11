@@ -1,6 +1,6 @@
 use proc_macro2::TokenStream as TS;
 use quote::quote;
-use syn::{braced, parse::Parse,Token};
+use syn::{braced, parse::Parse, Token};
 
 use super::{check::Check, given::Given, keywords as kw, traits::Code};
 
@@ -8,7 +8,7 @@ pub struct Case {
     kw: kw::case,
     ident: syn::Ident,
     given: Option<Given>,
-    check: Check
+    check: Check,
 }
 
 impl Parse for Case {
@@ -17,9 +17,18 @@ impl Parse for Case {
         let ident = input.parse::<syn::Ident>()?;
         let case;
         braced!(case in input);
-        let given = if case.peek(kw::given) {Some(case.parse::<Given>()?)} else {None};
+        let given = if case.peek(kw::given) {
+            Some(case.parse::<Given>()?)
+        } else {
+            None
+        };
         let check = case.parse::<Check>()?;
-        Ok(Case { kw, ident, given, check })
+        Ok(Case {
+            kw,
+            ident,
+            given,
+            check,
+        })
     }
 }
 

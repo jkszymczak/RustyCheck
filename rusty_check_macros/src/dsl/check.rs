@@ -6,7 +6,7 @@ use syn::{braced, custom_keyword, parse::Parse, Token};
 pub struct Check {
     keyword: kw::check,
     conditions: Conditions,
-    comment: String
+    comment: String,
 }
 enum Symbol {
     Equal,
@@ -56,7 +56,6 @@ impl Parse for JoinType {
         } else {
             input.parse::<kw::or>()?;
             Ok(JoinType::Or)
-                
         }
     }
 }
@@ -139,34 +138,41 @@ impl Code for Condition {
     }
 }
 
-
 fn is_for_each(input: &syn::parse::ParseStream) -> bool {
     input.peek(Token![for]) && input.peek2(kw::each)
 }
 fn is_in_any(input: &syn::parse::ParseStream) -> bool {
-    input.peek(Token![for])&&input.peek2(kw::any)
+    input.peek(Token![for]) && input.peek2(kw::any)
 }
 
-fn parse_for_loop(input: syn::parse::ParseStream,loop_type: LoopType) -> syn::Result<Conditions> {
+fn parse_for_loop(input: syn::parse::ParseStream, loop_type: LoopType) -> syn::Result<Conditions> {
     input.parse::<Token![for]>()?;
     match loop_type {
-        LoopType::ForAny => {input.parse::<kw::any>()?;},
-        LoopType::ForEach => {input.parse::<kw::each>()?;},
+        LoopType::ForAny => {
+            input.parse::<kw::any>()?;
+        }
+        LoopType::ForEach => {
+            input.parse::<kw::each>()?;
+        }
     }
     let element = input.parse::<syn::Ident>()?;
     input.parse::<Token![in]>()?;
     let collection = input.parse::<syn::Ident>()?;
     input.parse::<Token![,]>()?;
     let conditions = input.parse::<Conditions>()?;
-    Ok(Conditions::LoopCondition { collection: collection, element: element, loop_type: loop_type, condition:Box::new(conditions) })
-    
+    Ok(Conditions::LoopCondition {
+        collection: collection,
+        element: element,
+        loop_type: loop_type,
+        condition: Box::new(conditions),
+    })
 }
 
 fn parse_loop_condition(input: syn::parse::ParseStream) -> syn::Result<Conditions> {
     if is_for_each(&input) {
-        parse_for_loop(&input,LoopType::ForEach)
+        parse_for_loop(&input, LoopType::ForEach)
     } else if is_in_any(&input) {
-        parse_for_loop(&input,LoopType::ForAny)
+        parse_for_loop(&input, LoopType::ForAny)
     } else {
         todo!()
     }
@@ -174,14 +180,17 @@ fn parse_loop_condition(input: syn::parse::ParseStream) -> syn::Result<Condition
 
 impl Parse for Conditions {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-
         if is_for_each(&input) || is_in_any(&input) {
             return parse_loop_condition(input);
         }
         let condition = input.parse::<Condition>()?;
-        if input.peek(kw::or) || input.peek(kw::and){
+        if input.peek(kw::or) || input.peek(kw::and) {
             let join_type = input.parse::<JoinType>()?;
-            return Ok(Conditions::CompoundCondition { left_condition: condition, join: join_type, right_condition: Box::new(input.parse()?)})
+            return Ok(Conditions::CompoundCondition {
+                left_condition: condition,
+                join: join_type,
+                right_condition: Box::new(input.parse()?),
+            });
         }
         Ok(Conditions::Condition(condition))
     }
@@ -190,20 +199,34 @@ impl Parse for Conditions {
 impl Code for Conditions {
     fn get_code(&self) -> proc_macro2::TokenStream {
         match self {
-            Conditions::LoopCondition {loop_type: LoopType::ForEach, collection,element, condition } => {
+            Conditions::LoopCondition {
+                loop_type: LoopType::ForEach,
+                collection,
+                element,
+                condition,
+            } => {
                 let condition = condition.get_code();
-                quote!{ #collection.iter().map(| &#element| #condition ).filter(| &#element | #element == false).count() == 0 }
-            },
-            Conditions::LoopCondition {loop_type: LoopType::ForAny, collection,element, condition } => {
+                quote! { #collection.iter().map(| &#element| #condition ).filter(| &#element | #element == false).count() == 0 }
+            }
+            Conditions::LoopCondition {
+                loop_type: LoopType::ForAny,
+                collection,
+                element,
+                condition,
+            } => {
                 let condition = condition.get_code();
-                quote!{ #collection.iter().map(| &#element| #condition ).filter(| &#element | #element == true).count() != 0 }
-            },
-            Conditions::CompoundCondition { left_condition, join, right_condition } => {
+                quote! { #collection.iter().map(| &#element| #condition ).filter(| &#element | #element == true).count() != 0 }
+            }
+            Conditions::CompoundCondition {
+                left_condition,
+                join,
+                right_condition,
+            } => {
                 let left = left_condition.get_code();
                 let join = join.get_code();
                 let right = right_condition.get_code();
                 quote! { (#left) #join #right }
-            },
+            }
             Conditions::Condition(condition) => condition.get_code(),
         }
     }
@@ -216,8 +239,11 @@ impl Parse for Check {
         braced!(conditions in input);
         let comment = conditions.to_string();
         let conditions = conditions.parse::<Conditions>()?;
-        Ok(Check { keyword: kw,comment ,conditions })
-        
+        Ok(Check {
+            keyword: kw,
+            comment,
+            conditions,
+        })
     }
 }
 impl Code for Check {
@@ -225,6 +251,6 @@ impl Code for Check {
         let conditions = self.conditions.get_code();
         let comment = self.comment.clone();
         // TODO: Add custom message to assert where it would show condition with changed values
-        quote!{assert!(#conditions,#comment);}
+        quote! {assert!(#conditions,#comment);}
     }
 }
