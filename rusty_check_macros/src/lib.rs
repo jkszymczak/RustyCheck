@@ -10,7 +10,10 @@ pub fn rusty_check(input: TokenStream) -> TokenStream {
     dbg!(&output);
     quote! {
         // this is macro part
-        #output
+        //#[cfg(test)]
+        // mod tests {
+            #output
+        // }
         //this is not
 
     }

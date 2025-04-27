@@ -1,4 +1,4 @@
-<rusty_check> ::= <cases> | " "
+<rusty_check> ::= <cases> | <rust_code> | " "
 
 <cases> ::= <case> <cases> | <case>
 
