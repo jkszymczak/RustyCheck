@@ -2,12 +2,13 @@ use proc_macro2::TokenStream as TS;
 use quote::quote;
 use syn::{braced, parse::Parse, Token};
 
-use super::{check::Check, given::Given, keywords as kw, traits::Code};
+use super::{check::Check, compute::Compute, given::Given, keywords as kw, traits::Code};
 
 pub struct Case {
     kw: kw::case,
     ident: syn::Ident,
     given: Option<Given>,
+    compute: Option<Compute>,
     check: Check,
 }
 
@@ -22,11 +23,17 @@ impl Parse for Case {
         } else {
             None
         };
+        let compute = if case.peek(Token![do]) {
+            Some(case.parse::<Compute>()?)
+        } else {
+            None
+        };
         let check = case.parse::<Check>()?;
         Ok(Case {
             kw,
             ident,
             given,
+            compute,
             check,
         })
     }
@@ -39,11 +46,16 @@ impl Code for Case {
             Some(given) => given.get_code(),
             None => quote! {},
         };
+        let compute = match &self.compute {
+            Some(compute) => compute.get_code(),
+            None => quote! {},
+        };
         let check = self.check.get_code();
         quote! {
             #[test]
             fn #ident() {
                 #given
+                #compute
                 #check;
             }
         }

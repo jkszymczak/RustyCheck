@@ -1,12 +1,15 @@
 use rusty_check_macros::rusty_check;
-rusty_check!{
+rusty_check! {
     case testing {
         given {
-            a = 22,
+            mut a = 22,
             b = 33
         }
+        do {
+           a = a+b;
+        }
         check {
-            a less than b
+            a greater than b
         }
     }
     case testing2 {

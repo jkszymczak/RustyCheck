@@ -1,5 +1,6 @@
 pub mod case;
 pub mod check;
+pub mod compute;
 pub mod condition;
 pub mod conditions;
 pub mod expression;

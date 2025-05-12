@@ -7,20 +7,44 @@ pub struct Given {
     keyword: kw::given,
     assignments: Vec<Assignment>,
 }
-struct Assignment {
-    data: TS,
+// struct Assignment {
+//     data: TS,
+// }
+
+pub enum Assignment {
+    Mutable { data: TS },
+    Immutable { data: TS },
 }
 
+fn parse_immutable(input: syn::parse::ParseStream) -> syn::Result<Assignment> {
+    let ident = input.parse::<syn::Ident>()?;
+    input.parse::<Token![=]>()?;
+    let exp = input.parse::<Expression>()?.get_code();
+    let code: TS = quote! {
+        let #ident = #exp;
+    }
+    .into();
+    Ok(Assignment::Immutable { data: code })
+}
+
+fn parse_mutable(input: syn::parse::ParseStream) -> syn::Result<Assignment> {
+    _ = input.parse::<Token![mut]>()?;
+    let ident = input.parse::<syn::Ident>()?;
+    input.parse::<Token![=]>()?;
+    let exp = input.parse::<Expression>()?.get_code();
+    let code: TS = quote! {
+        let mut #ident = #exp;
+    }
+    .into();
+    Ok(Assignment::Mutable { data: code })
+}
 impl Parse for Assignment {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        let ident = input.parse::<syn::Ident>()?;
-        input.parse::<Token![=]>()?;
-        let exp = input.parse::<Expression>()?.get_code();
-        let code: TS = quote! {
-            let #ident = #exp;
+        if input.peek(Token![mut]) {
+            parse_mutable(input)
+        } else {
+            parse_immutable(input)
         }
-        .into();
-        Ok(Assignment { data: code })
     }
 }
 
@@ -39,7 +63,10 @@ impl Parse for Given {
 }
 impl Code for Given {
     fn get_code(&self) -> proc_macro2::TokenStream {
-        let assignments = self.assignments.iter().map(|a| a.data.clone());
+        let assignments = self.assignments.iter().map(|a| match a {
+            Assignment::Mutable { data } => data.clone(),
+            Assignment::Immutable { data } => data.clone(),
+        });
         quote! {
             #(#assignments)*
         }

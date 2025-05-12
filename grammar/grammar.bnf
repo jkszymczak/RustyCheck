@@ -2,15 +2,20 @@
 
 <cases> ::= <case> <cases> | <case>
 
-<case> ::= "case " <identifier> "{ " <given> <check> " }"
+<case> ::= "case " <identifier> "{ " <given> <compute> <check> " }"
+         | "case " <identifier> "{ " <compute> <check> " }"
+         | "case " <identifier> "{ " <check> " }"
 
 <given> ::= "given" "{ " <assignments> " }" | " "
 <assignments> ::= <assignment> "," <assignments>
                 | <assignment>
                 | " "
-<assignment> ::= <identifier> " = " <expression>
+<assignment> ::= <non_mutable_assignment> | <mutable_assignment>
+<non_mutable_assignment> ::= <identifier> " = " <expression>
+<mutable_assignment> ::= "mut " <non_mutable_assignment>
+<compute> ::= "do" "{" <rust_code> "}"
 
-<compute> ::= ;; events in sequence to prepare before checking condition
+<create_mock> ::= ;; sub dsl for creating mocks
 
 <check> ::= "check" "{ " <conditions> " }"
 <conditions> ::= <condition> " or " <conditions>
