@@ -1,5 +1,9 @@
 <rusty_check> ::= <cases> | <rust_code> | " "
-
+<global> ::= "global" "{" <global_assignments> "}"
+<global_assignments> ::= <global_variables> <global_constants> | <global_constants> <global_variables> | " "
+<global_variables> ::= "variables" "{" <assignments> "}" | " "
+<global_constants> ::= "const" "{" <non_mutable_assignments> "}" | " "
+<non_mutable_assignments> ::= <non_mutable_assignment> <non_mutable_assignments> | <non_mutable_assignment> | ""
 <cases> ::= <case> <cases> | <case>
 
 <case> ::= "case " <identifier> "{ " <given> <compute> <check> " }"
@@ -16,6 +20,8 @@
 <compute> ::= "do" "{" <rust_code> "}"
 
 <create_mock> ::= ;; sub dsl for creating mocks
+
+<compose_mock> ::= "compose mocks of" <identifiers> "into" <identifier>
 
 <check> ::= "check" "{ " <conditions> " }"
 <conditions> ::= <condition> " or " <conditions>
