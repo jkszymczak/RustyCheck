@@ -1,12 +1,11 @@
 @startebnf
 !theme hacker
-rusty_check = cases | rust_code | " ";
+rusty_check = {case | rust_code};
 global = "global", "{", global_assignments ,"}";
 global_assignments = [global_constants], [global_variables] | [global_variables], [global_constants];
 global_variables = ["variables", "{", [assignments], "}"]; 
 global_constants = ["const", "{", [non_mutable_assignments], "}"];
 non_mutable_assignments = non_mutable_assignment, {",", non_mutable_assignment};
-cases = {case};
 
 case = "case", identifier, "{", [given], [compute], check, "}";
 

@@ -7,3 +7,10 @@ repos:
         files: \.rs$
         verbose: true
 
+- repo: https://github.com/jkszymczak/pre-commit-hooks
+  rev: v0.0.1
+  hooks:
+      - id: run-command
+        args: [plantuml,-tsvg]
+        files: \.puml$
+        verbose: true
