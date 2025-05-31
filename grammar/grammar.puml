@@ -1,5 +1,6 @@
 @startebnf
 !theme hacker
+skinparam backgroundColor white
 rusty_check = {case | rust_code};
 global = "global", "{", global_assignments ,"}";
 global_assignments = [global_constants], [global_variables] | [global_variables], [global_constants];
