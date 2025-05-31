@@ -1,10 +1,3 @@
-pub mod case;
-pub mod check;
-pub mod compute;
-pub mod condition;
-pub mod conditions;
-pub mod expression;
-pub mod given;
-pub mod keywords;
-pub mod rusty_check;
+pub mod attribute_macros;
+pub mod proc_macros;
 pub mod traits;

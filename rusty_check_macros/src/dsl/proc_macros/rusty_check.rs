@@ -1,6 +1,4 @@
-use super::case::Case;
-use super::keywords as kw;
-use super::traits::Code;
+use super::{super::traits::Code, case::Case, keywords as kw};
 use proc_macro2::TokenStream as TS;
 use quote::quote;
 use syn::{braced, parse::Parse, Error, Token};

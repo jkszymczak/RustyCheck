@@ -1,4 +1,4 @@
-use rusty_check_macros::rusty_check;
+use rusty_check_macros::{automock, rusty_check};
 rusty_check! {
     case testing {
         given {
@@ -29,4 +29,9 @@ rusty_check! {
             for any c in col, c equal 2
         }
     }
+}
+
+#[automock(composable)]
+trait TestMockTrait {
+    fn test_method(&self) -> String;
 }

@@ -1,4 +1,4 @@
-use crate::dsl::{condition::Condition, expression::Expression, keywords as kw, traits::Code};
+use super::{super::traits::Code, condition::Condition, expression::Expression, keywords as kw};
 use proc_macro2::TokenStream as TS;
 use quote::quote;
 use syn::{braced, custom_keyword, parse::Parse, Token};
