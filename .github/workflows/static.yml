@@ -53,7 +53,7 @@ jobs:
       - name: Upload documentation
         uses: actions/upload-pages-artifact@v3
         with:
-            path: ./target/docs
+            path: ./target/doc
   # Single deploy job since we're just deploying
   deploy:
     environment:
