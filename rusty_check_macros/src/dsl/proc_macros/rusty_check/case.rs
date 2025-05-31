@@ -2,7 +2,12 @@ use proc_macro2::TokenStream as TS;
 use quote::quote;
 use syn::{braced, parse::Parse, Token};
 
-use super::{check::Check, compute::Compute, given::Given, keywords as kw, traits::Code};
+use super::{
+    super::super::traits::Code, check::Check, compute::Compute,
+    declaration_block::DeclarationBlock, keywords as kw,
+};
+
+type Given = DeclarationBlock<kw::given>;
 
 pub struct Case {
     kw: kw::case,

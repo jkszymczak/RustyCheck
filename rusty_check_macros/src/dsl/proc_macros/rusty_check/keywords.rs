@@ -17,3 +17,8 @@ syn::custom_keyword!(any);
 
 // expression keywords
 syn::custom_keyword!(rust);
+
+syn::custom_keyword!(global);
+syn::custom_keyword!(configure);
+syn::custom_keyword!(constants);
+syn::custom_keyword!(vars);
