@@ -1,4 +1,4 @@
-use rusty_check_macros::{automock, rusty_check};
+use rusty_check_macros::{rusty_check, rustymock};
 rusty_check! {
     case testing {
         given {
@@ -31,7 +31,7 @@ rusty_check! {
     }
 }
 
-#[automock(composable)]
+#[rustymock(composable)]
 trait TestMockTrait {
     fn test_method(&self) -> String;
 }

@@ -17,6 +17,6 @@ pub fn rusty_check(input: TokenStream) -> TokenStream {
 }
 
 #[proc_macro_attribute]
-pub fn automock(attr: TokenStream, item: TokenStream) -> TokenStream {
+pub fn rustymock(attr: TokenStream, item: TokenStream) -> TokenStream {
     automockfn(attr, item)
 }
