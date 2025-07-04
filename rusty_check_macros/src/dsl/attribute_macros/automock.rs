@@ -7,10 +7,31 @@ use syn::FnArg;
 use syn::TraitItemFn;
 use syn::{parse_macro_input, ItemTrait, TraitItem};
 
+use std::collections::HashMap;
+use std::sync::LazyLock;
+use std::sync::Mutex;
+#[derive(Debug, Clone)]
+pub struct MethodDecl {
+    pub name: String,
+    pub decl: String,
+    pub args: Vec<String>,
+}
+
+#[derive(Debug, Clone)]
+pub struct TraitDecl {
+    pub trait_name: String,
+    pub methods: Vec<MethodDecl>,
+}
+
+// GLOBAL TRAIT REGISTRY
+pub static TRAIT_REGISTRY: LazyLock<Mutex<HashMap<String, TraitDecl>>> =
+    LazyLock::new(|| Mutex::new(HashMap::new()));
+
 pub fn automockfn(attr: TokenStream, item: TokenStream) -> TokenStream {
     let trait_def = parse_macro_input!(item as ItemTrait);
     let trait_name = trait_def.ident.clone();
     let mock_trait_name = format_ident!("Mock{}", trait_name);
+    let trait_name_string = trait_def.ident.clone().to_string();
     let functions: Vec<TraitItemFn> = trait_def
         .items
         .iter()
@@ -19,7 +40,7 @@ pub fn automockfn(attr: TokenStream, item: TokenStream) -> TokenStream {
             _other => None,
         })
         .collect();
-    let method_declaration: Vec<TS> = functions
+    let method_declaration: Vec<MethodDecl> = functions
         .iter()
         .map(|f| {
             let declaration_literal = f.sig.clone().into_token_stream().to_string();
@@ -36,25 +57,23 @@ pub fn automockfn(attr: TokenStream, item: TokenStream) -> TokenStream {
                     },
                 })
                 .collect();
-            let args_str = args.join(", ");
-            quote! {
-                rusty_check::mocks::MethodDeclaration {
-                    declaration_literal: #declaration_literal,
-                    name: #name,
-                    args: #args_str
-                }
+            MethodDecl {
+                decl: declaration_literal,
+                name: name,
+                args: args,
             }
-            .into()
         })
         .collect();
+    TRAIT_REGISTRY.lock().unwrap().insert(
+        trait_name_string.clone(),
+        TraitDecl {
+            trait_name: trait_name_string,
+            methods: method_declaration,
+        },
+    );
     quote! {
         #[::mockall::automock]
         #trait_def
-        impl rusty_check::mocks::ComposableMock for #mock_trait_name {
-            fn get_methods(&self) -> Vec<rusty_check::mocks::MethodDeclaration> {
-                vec![#(#method_declaration),*]
-            }
-        }
     }
     .into()
 }
