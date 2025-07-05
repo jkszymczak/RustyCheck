@@ -2,7 +2,9 @@ use proc_macro2::TokenStream as TS;
 use quote::quote;
 use syn::{braced, parse::Parse, Token};
 
-use super::{super::traits::Code, check::Check, compute::Compute, given::Given, keywords as kw};
+use super::{
+    super::super::traits::Code, check::Check, compute::Compute, given::Given, keywords as kw,
+};
 
 pub struct Case {
     kw: kw::case,

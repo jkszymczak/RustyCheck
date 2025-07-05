@@ -27,8 +27,7 @@ pub struct TraitDecl {
 pub static TRAIT_REGISTRY: LazyLock<Mutex<HashMap<String, TraitDecl>>> =
     LazyLock::new(|| Mutex::new(HashMap::new()));
 
-pub fn automockfn(attr: TokenStream, item: TokenStream) -> TokenStream {
-    let trait_def = parse_macro_input!(item as ItemTrait);
+pub fn automockfn(trait_def: ItemTrait) {
     let trait_name = trait_def.ident.clone();
     let mock_trait_name = format_ident!("Mock{}", trait_name);
     let trait_name_string = trait_def.ident.clone().to_string();
@@ -71,9 +70,4 @@ pub fn automockfn(attr: TokenStream, item: TokenStream) -> TokenStream {
             methods: method_declaration,
         },
     );
-    quote! {
-        #[::mockall::automock]
-        #trait_def
-    }
-    .into()
 }

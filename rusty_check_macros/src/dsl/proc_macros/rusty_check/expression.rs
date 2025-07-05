@@ -1,4 +1,4 @@
-use super::{super::traits::Code, keywords as kw};
+use super::{super::super::traits::Code, keywords as kw};
 use proc_macro2::TokenStream as TS;
 use quote::quote;
 use syn::{braced, parse::Parse};
