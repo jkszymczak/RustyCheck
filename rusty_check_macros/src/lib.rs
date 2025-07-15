@@ -1,6 +1,6 @@
 mod dsl;
 use dsl::{
-    attribute_macros::automock::{automockfn, TRAIT_REGISTRY},
+    attribute_macros::mock_registry::{add_to_registry, TRAIT_REGISTRY},
     proc_macros::{
         compose_mocks::compose_mocks::compose_mocks_fn, rusty_check::rusty_check::RustyCheck,
     },
@@ -24,9 +24,19 @@ pub fn rusty_check(input: TokenStream) -> TokenStream {
 #[proc_macro_attribute]
 pub fn rustymock(attr: TokenStream, item: TokenStream) -> TokenStream {
     let trait_def = parse_macro_input!(item as ItemTrait);
-    automockfn(trait_def.clone());
     quote! {
+        #[::rusty_check::mocks::append_to_registry]
         #[::mockall::automock]
+        #trait_def
+    }
+    .into()
+}
+
+#[proc_macro_attribute]
+pub fn append_to_registry(attr: TokenStream, item: TokenStream) -> TokenStream {
+    let trait_def = parse_macro_input!(item as ItemTrait);
+    add_to_registry(trait_def.clone());
+    quote! {
         #trait_def
     }
     .into()

@@ -1,15 +1,8 @@
-use proc_macro::TokenStream;
-use proc_macro2::TokenStream as TS;
-use quote::format_ident;
-use quote::quote;
 use quote::ToTokens;
-use syn::FnArg;
-use syn::TraitItemFn;
-use syn::{parse_macro_input, ItemTrait, TraitItem};
-
 use std::collections::HashMap;
-use std::sync::LazyLock;
-use std::sync::Mutex;
+use std::sync::{LazyLock, Mutex};
+use syn::{FnArg, ItemTrait, TraitItemFn};
+
 #[derive(Debug, Clone)]
 pub struct MethodDecl {
     pub name: String,
@@ -23,13 +16,10 @@ pub struct TraitDecl {
     pub methods: Vec<MethodDecl>,
 }
 
-// GLOBAL TRAIT REGISTRY
 pub static TRAIT_REGISTRY: LazyLock<Mutex<HashMap<String, TraitDecl>>> =
     LazyLock::new(|| Mutex::new(HashMap::new()));
 
-pub fn automockfn(trait_def: ItemTrait) {
-    let trait_name = trait_def.ident.clone();
-    let mock_trait_name = format_ident!("Mock{}", trait_name);
+pub fn add_to_registry(trait_def: ItemTrait) {
     let trait_name_string = trait_def.ident.clone().to_string();
     let functions: Vec<TraitItemFn> = trait_def
         .items

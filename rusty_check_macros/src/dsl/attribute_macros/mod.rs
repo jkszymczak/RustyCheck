@@ -1,1 +1,1 @@
-pub mod automock;
+pub mod mock_registry;

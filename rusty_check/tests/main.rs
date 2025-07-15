@@ -1,50 +1,23 @@
 use rusty_check_macros::{compose_mocks, rusty_check, rustymock};
-rusty_check! {
-    case testing {
-        given {
-            mut a = 22,
-            b = 33
-        }
-        do {
-           a = a+b;
-        }
-        check {
-            a greater than b
-        }
-    }
-    case testing2 {
-        given {
-            col = vec![1,2,3,4],
-        }
-        check {
-            for each c in col, c equal c
-        }
-    }
-
-    case testing3 {
-        given {
-            col = vec![1,2,3,4],
-        }
-        check {
-            for any c in col, c equal 2
-        }
-    }
-}
-
+#[cfg(feature = "mocking")]
 #[rustymock(composable)]
 trait TestMockTrait {
     fn test_method(&self) -> String;
 }
+#[cfg(feature = "mocking")]
 #[rustymock(composable)]
 trait TestMockTraitSecond {
     fn test_method_second(&self, next: String) -> String;
 }
+#[cfg(feature = "mocking")]
 compose_mocks!(TestMockTrait, TestMockTraitSecond, ComposedMocks);
 
+#[cfg(feature = "mocking")]
 fn test_funcs<T: TestMockTrait + TestMockTraitSecond>(a: T, test_val: String) -> String {
     a.test_method();
     a.test_method_second(test_val)
 }
+#[cfg(feature = "mocking")]
 rusty_check! {
     case test_compose_mocks {
         given {

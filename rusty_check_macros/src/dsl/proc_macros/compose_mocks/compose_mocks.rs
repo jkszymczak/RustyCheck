@@ -1,8 +1,8 @@
 use proc_macro::TokenStream;
 use quote::{format_ident, quote};
-use syn::{parse_macro_input, parse_str, Ident, ItemTrait};
+use syn::{parse_macro_input, parse_str, Ident};
 
-use crate::dsl::attribute_macros::automock::TRAIT_REGISTRY;
+use crate::dsl::attribute_macros::mock_registry::TRAIT_REGISTRY;
 struct ComposeTraits {
     name: syn::Ident,
     traits: Vec<Ident>,
