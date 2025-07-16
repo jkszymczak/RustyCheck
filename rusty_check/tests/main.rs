@@ -42,3 +42,13 @@ rusty_check! {
     }
 
 }
+
+rusty_check! {
+    global {
+        vars {
+            x: u32 = 1,
+        }
+
+    }
+
+}

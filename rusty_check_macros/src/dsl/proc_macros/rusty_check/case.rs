@@ -1,5 +1,5 @@
 use proc_macro2::TokenStream as TS;
-use quote::quote;
+use quote::{quote, ToTokens};
 use syn::{braced, parse::Parse, Token};
 
 use super::{
@@ -48,7 +48,7 @@ impl Code for Case {
     fn get_code(&self) -> proc_macro2::TokenStream {
         let ident = self.ident.clone();
         let given = match &self.given {
-            Some(given) => given.get_code(),
+            Some(given) => given.to_token_stream(),
             None => quote! {},
         };
         let compute = match &self.compute {
