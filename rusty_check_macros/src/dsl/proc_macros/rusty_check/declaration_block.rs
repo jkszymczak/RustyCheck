@@ -54,6 +54,7 @@ impl Parse for Assignment<kw::given> {
 impl Parse for Assignment<kw::vars> {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         if input.peek(Token![mut]) {
+            _ = input.parse::<Token![mut]>();
             parse_assignment(input, quote! {static mut}.into())
         } else {
             parse_assignment(input, quote! {static}.into())
