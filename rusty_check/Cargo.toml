@@ -10,3 +10,4 @@ rusty_check_macros = {path = "../rusty_check_macros"}
 [features]
 mocking = ["dep:mockall"]
 unstable = []
+all = ["mocking","unstable"]
