@@ -1,11 +1,11 @@
 use super::{super::super::traits::Code, case::Case, global::Global, keywords as kw};
 use proc_macro2::TokenStream as TS;
 use quote::{quote, ToTokens};
-use syn::{braced, parse::Parse, Error, Token};
+use syn::{braced, parse::Parse, Error, Item, Token};
 pub struct RustyCheck {
     globals: Option<Global>,
     cases: Vec<Case>,
-    rust_code: Vec<TS>,
+    rust_code: Vec<Item>,
 }
 
 impl Parse for RustyCheck {
@@ -21,7 +21,9 @@ impl Parse for RustyCheck {
             if input.peek(kw::case) {
                 cases.push(input.parse()?);
             } else {
-                rust_code.push(parse_rust_code_until_case(input)?);
+                while !input.is_empty() && !input.peek(kw::case) {
+                    rust_code.push(input.parse::<Item>()?);
+                }
             }
         }
 
@@ -33,29 +35,41 @@ impl Parse for RustyCheck {
     }
 }
 
+// fn parse_rust_code_until_case(input: syn::parse::ParseStream) -> syn::Result<TS> {
+//     let mut tokens = TS::new();
+//     while !input.is_empty() && !input.peek(kw::case) {
+//         let tt: proc_macro2::TokenTree = input.parse()?;
+//         tokens.extend(std::iter::once(tt));
+//     }
+//     Ok(tokens)
+// }
 fn parse_rust_code_until_case(input: syn::parse::ParseStream) -> syn::Result<TS> {
-    let mut tokens = TS::new();
-    while !input.is_empty() && !input.peek(kw::case) {
-        let tt: proc_macro2::TokenTree = input.parse()?;
-        tokens.extend(std::iter::once(tt));
-    }
-    Ok(tokens)
+    // parse one top-level Item
+    let item: Item = input.parse()?;
+    Ok(item.to_token_stream())
 }
 
 impl Code for RustyCheck {
     fn get_code(&self) -> proc_macro2::TokenStream {
-        let globals = match &self.globals {
-            Some(g) => g.to_token_stream(),
-
-            None => quote! {},
+        let (config, consts, vars) = match &self.globals {
+            Some(Global {
+                config,
+                consts,
+                vars,
+                ..
+            }) => (config, consts, vars),
+            None => (&None, &None, &None),
         };
-        let cases = self.cases.iter().map(|case| case.get_code());
+        let cases = self.cases.iter().map(|case| case.to_token_stream());
         let rust_code = self.rust_code.clone();
-        dbg!(&globals);
         quote! {
-            #globals
-            #(#rust_code)*
-            #(#cases)*
+            #[cfg(all(test,#config))]
+            mod tests {
+                #(#rust_code)*
+                #consts
+                #vars
+                #(#cases)*
+            }
         }
     }
 }

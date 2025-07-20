@@ -3,7 +3,7 @@ use quote::{quote, ToTokens};
 use syn::{braced, parse::Parse, Token};
 
 use super::{
-    super::super::traits::Code, check::Check, compute::Compute,
+    super::super::traits::Code, check::Check, compute::Compute, configure::Config,
     declaration_block::DeclarationBlock, keywords as kw,
 };
 
@@ -12,6 +12,7 @@ type Given = DeclarationBlock<kw::given>;
 pub struct Case {
     kw: kw::case,
     ident: syn::Ident,
+    config: Option<Config>,
     given: Option<Given>,
     compute: Option<Compute>,
     check: Check,
@@ -23,6 +24,11 @@ impl Parse for Case {
         let ident = input.parse::<syn::Ident>()?;
         let case;
         braced!(case in input);
+        let config = if case.peek(kw::configure) {
+            Some(case.parse::<Config>()?)
+        } else {
+            None
+        };
         let given = if case.peek(kw::given) {
             Some(case.parse::<Given>()?)
         } else {
@@ -37,6 +43,7 @@ impl Parse for Case {
         Ok(Case {
             kw,
             ident,
+            config,
             given,
             compute,
             check,
@@ -44,25 +51,24 @@ impl Parse for Case {
     }
 }
 
-impl Code for Case {
-    fn get_code(&self) -> proc_macro2::TokenStream {
+impl ToTokens for Case {
+    fn to_tokens(&self, tokens: &mut TS) {
         let ident = self.ident.clone();
-        let given = match &self.given {
-            Some(given) => given.to_token_stream(),
-            None => quote! {},
-        };
+        let given = &self.given;
         let compute = match &self.compute {
             Some(compute) => compute.get_code(),
             None => quote! {},
         };
+        let config = &self.config;
         let check = self.check.get_code();
-        quote! {
+        tokens.extend(quote! {
+            #[cfg(#config)]
             #[test]
             fn #ident() {
                 #given
                 #compute
                 #check;
             }
-        }
+        });
     }
 }

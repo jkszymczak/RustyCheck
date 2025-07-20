@@ -1,37 +1,13 @@
-use std::marker::PhantomData;
-
-use super::expression::Expression;
-use super::{super::super::traits::Code, declaration_block::DeclarationBlock, keywords as kw};
-use proc_macro::TokenStream;
-use proc_macro2::TokenStream as TS;
-use quote::{quote, ToTokens};
-use syn::parse::discouraged::Speculative;
-use syn::Error;
-use syn::{braced, custom_keyword, parse::Parse, Token};
+use super::{configure::Config, declaration_block::DeclarationBlock, keywords as kw};
+use syn::{braced, parse::Parse, token::Brace, Ident, Token};
 
 type Consts = DeclarationBlock<kw::constants>;
 type Vars = DeclarationBlock<kw::vars>;
 pub struct Global {
     kw: kw::global,
-    config: Option<Config>,
-    consts: Option<Consts>,
-    vars: Option<Vars>,
-}
-
-pub struct Config {
-    keyword: kw::configure,
-}
-
-impl ToTokens for Config {
-    fn to_tokens(&self, tokens: &mut TS) {
-        todo!()
-    }
-}
-
-impl Parse for Config {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        todo!()
-    }
+    pub config: Option<Config>,
+    pub consts: Option<Consts>,
+    pub vars: Option<Vars>,
 }
 
 impl Parse for Global {
@@ -78,22 +54,16 @@ impl Parse for Global {
     }
 }
 
-fn get_tokens_from_option<K: ToTokens>(input: &Option<K>) -> TS {
-    match input {
-        Some(i) => i.to_token_stream(),
-        None => quote! {},
-    }
-}
-
-impl ToTokens for Global {
-    fn to_tokens(&self, tokens: &mut TS) {
-        let config = get_tokens_from_option(&self.config);
-        let consts = get_tokens_from_option(&self.consts);
-        let vars = get_tokens_from_option(&self.vars);
-        let code = quote! {
-            #consts
-            #vars
-        };
-        tokens.extend(code.into_iter());
-    }
-}
+// impl ToTokens for Global {
+//     fn to_tokens(&self, tokens: &mut TS) {
+//         let config = get_tokens_from_option(&self.config);
+//         let consts = get_tokens_from_option(&self.consts);
+//         let vars = get_tokens_from_option(&self.vars);
+//         dbg!(config);
+//         let code = quote! {
+//             #consts
+//             #vars
+//         };
+//         tokens.extend(code.into_iter());
+//     }
+// }
