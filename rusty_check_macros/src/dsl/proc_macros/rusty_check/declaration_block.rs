@@ -2,7 +2,9 @@ use std::marker::PhantomData;
 
 use super::{super::super::traits::Code, expression::Expression, keywords as kw};
 use proc_macro2::TokenStream as TS;
-use quote::quote;
+
+use quote::{quote, ToTokens, TokenStreamExt};
+
 use syn::{braced, parse::Parse, Token};
 
 pub struct DeclarationBlock<K: Parse> {
@@ -19,7 +21,11 @@ fn parse_assignment<K: Parse>(
     input: syn::parse::ParseStream,
     assignment_kw: TS,
 ) -> syn::Result<Assignment<K>> {
-    let ident = input.parse::<syn::Ident>()?;
+    let ident = if input.peek2(Token![:]) {
+        input.parse::<syn::PatType>()?.to_token_stream()
+    } else {
+        input.parse::<syn::Ident>()?.to_token_stream()
+    };
     input.parse::<Token![=]>()?;
     let exp = input.parse::<Expression>()?.get_code();
     let code: TS = quote! {
@@ -30,6 +36,12 @@ fn parse_assignment<K: Parse>(
         kw: PhantomData,
         data: code,
     })
+}
+
+impl<K: Parse> ToTokens for Assignment<K> {
+    fn to_tokens(&self, tokens: &mut TS) {
+        tokens.extend(self.data.clone().into_iter());
+    }
 }
 
 impl Parse for Assignment<kw::given> {
@@ -46,13 +58,16 @@ impl Parse for Assignment<kw::given> {
 impl Parse for Assignment<kw::vars> {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         if input.peek(Token![mut]) {
+            _ = input.parse::<Token![mut]>();
+
             parse_assignment(input, quote! {static mut}.into())
         } else {
             parse_assignment(input, quote! {static}.into())
         }
     }
 }
-impl Parse for Assignment<kw::constants> {
+impl Parse for Assignment<kw::consts> {
+
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         parse_assignment(input, quote! {const}.into())
     }
@@ -79,5 +94,15 @@ impl<K: Parse> Code for DeclarationBlock<K> {
         quote! {
             #(#assignments)*
         }
+    }
+}
+
+impl<K: Parse> ToTokens for DeclarationBlock<K> {
+    fn to_tokens(&self, tokens: &mut TS) {
+        let assignments = self.assignments.iter().map(|a| a.data.clone());
+        let code = quote! {
+            #(#assignments)*
+        };
+        tokens.extend(code.into_iter());
     }
 }
