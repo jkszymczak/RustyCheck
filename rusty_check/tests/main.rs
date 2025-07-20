@@ -6,6 +6,7 @@ rusty_check! {
     case test_compose_mocks {
         cfg = all(feature = "mocking", feature="unstable")
         given {
+
             return_val = "i runned".to_string(),
             check_result = return_val.clone()
 
@@ -14,5 +15,4 @@ rusty_check! {
             check_result equal check_result
         }
     }
-
 }

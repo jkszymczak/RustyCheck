@@ -17,6 +17,7 @@ impl Parse for RustyCheck {
         } else {
             None
         };
+
         while !input.is_empty() {
             if input.peek(kw::case) {
                 cases.push(input.parse()?);

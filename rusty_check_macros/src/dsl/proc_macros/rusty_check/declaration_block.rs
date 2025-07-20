@@ -2,7 +2,9 @@ use std::marker::PhantomData;
 
 use super::{super::super::traits::Code, expression::Expression, keywords as kw};
 use proc_macro2::TokenStream as TS;
+
 use quote::{quote, ToTokens, TokenStreamExt};
+
 use syn::{braced, parse::Parse, Token};
 
 pub struct DeclarationBlock<K: Parse> {
@@ -35,11 +37,13 @@ fn parse_assignment<K: Parse>(
         data: code,
     })
 }
+
 impl<K: Parse> ToTokens for Assignment<K> {
     fn to_tokens(&self, tokens: &mut TS) {
         tokens.extend(self.data.clone().into_iter());
     }
 }
+
 impl Parse for Assignment<kw::given> {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         if input.peek(Token![mut]) {
@@ -55,6 +59,7 @@ impl Parse for Assignment<kw::vars> {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         if input.peek(Token![mut]) {
             _ = input.parse::<Token![mut]>();
+
             parse_assignment(input, quote! {static mut}.into())
         } else {
             parse_assignment(input, quote! {static}.into())
@@ -62,6 +67,7 @@ impl Parse for Assignment<kw::vars> {
     }
 }
 impl Parse for Assignment<kw::consts> {
+
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         parse_assignment(input, quote! {const}.into())
     }
