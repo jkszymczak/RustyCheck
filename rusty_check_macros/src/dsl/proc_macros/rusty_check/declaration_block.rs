@@ -61,7 +61,7 @@ impl Parse for Assignment<kw::vars> {
         }
     }
 }
-impl Parse for Assignment<kw::constants> {
+impl Parse for Assignment<kw::consts> {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         parse_assignment(input, quote! {const}.into())
     }

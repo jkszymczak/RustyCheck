@@ -24,7 +24,7 @@ impl Parse for Case {
         let ident = input.parse::<syn::Ident>()?;
         let case;
         braced!(case in input);
-        let config = if case.peek(kw::configure) {
+        let config = if case.peek(kw::cfg) {
             Some(case.parse::<Config>()?)
         } else {
             None

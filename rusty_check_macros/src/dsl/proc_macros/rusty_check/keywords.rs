@@ -19,6 +19,6 @@ syn::custom_keyword!(any);
 syn::custom_keyword!(rust);
 
 syn::custom_keyword!(global);
-syn::custom_keyword!(configure);
-syn::custom_keyword!(constants);
+syn::custom_keyword!(cfg);
+syn::custom_keyword!(consts);
 syn::custom_keyword!(vars);

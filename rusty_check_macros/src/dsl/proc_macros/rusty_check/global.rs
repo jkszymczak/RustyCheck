@@ -1,7 +1,7 @@
 use super::{configure::Config, declaration_block::DeclarationBlock, keywords as kw};
 use syn::{braced, parse::Parse, token::Brace, Ident, Token};
 
-type Consts = DeclarationBlock<kw::constants>;
+type Consts = DeclarationBlock<kw::consts>;
 type Vars = DeclarationBlock<kw::vars>;
 pub struct Global {
     kw: kw::global,
@@ -21,14 +21,14 @@ impl Parse for Global {
         let mut vars = None;
 
         while !content.is_empty() {
-            if content.peek(kw::configure) {
+            if content.peek(kw::cfg) {
                 let item = content.parse::<Config>()?;
                 if config.is_some() {
                     // return Err(syn::Error::new_spanned(item, "Duplicate `configure` block"));
                     todo!()
                 }
                 config = Some(item);
-            } else if content.peek(kw::constants) {
+            } else if content.peek(kw::consts) {
                 let item = content.parse::<Consts>()?;
                 if consts.is_some() {
                     return Err(syn::Error::new_spanned(item, "Duplicate `constants` block"));

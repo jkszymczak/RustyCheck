@@ -2,11 +2,11 @@
 !theme hacker
 skinparam backgroundColor white
 rusty_check = [global], {case | rust_code};
-configure = "configure","{","}";
+configure = "cfg","{","}";
 global = "global", "{", [configure],  global_assignments ,"}";
 global_assignments = [global_constants], [global_variables] | [global_variables], [global_constants];
-global_variables = ["variables", "{", [assignments], "}"]; 
-global_constants = ["const", "{", [non_mutable_assignments], "}"];
+global_variables = ["vars", "{", [assignments], "}"]; 
+global_constants = ["consts", "{", [non_mutable_assignments], "}"];
 non_mutable_assignments = non_mutable_assignment, {",", non_mutable_assignment};
 
 case = "case", identifier, "{", [given], [compute], check, "}";

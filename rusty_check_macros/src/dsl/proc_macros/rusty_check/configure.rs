@@ -3,7 +3,7 @@ use proc_macro2::{TokenStream as TS, TokenTree};
 use quote::{quote, ToTokens};
 use syn::{braced, parse::Parse, token::Brace, Ident, Token};
 pub struct Config {
-    keyword: kw::configure,
+    keyword: kw::cfg,
     pub elements: TS,
 }
 
@@ -18,7 +18,7 @@ impl ToTokens for Config {
 
 impl Parse for Config {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        let kw = input.parse::<kw::configure>()?;
+        let kw = input.parse::<kw::cfg>()?;
         _ = input.parse::<Token![=]>()?;
         let mut value_tokens = TS::new();
         while !input.is_empty() {
