@@ -1,7 +1,7 @@
 use super::keywords as kw;
 use proc_macro2::{TokenStream as TS, TokenTree};
 use quote::{quote, ToTokens};
-use syn::{braced, parse::Parse, token::Brace, Ident, Token};
+use syn::{parse::Parse, token::Brace, Ident, Token};
 pub struct Config {
     keyword: kw::cfg,
     pub elements: TS,

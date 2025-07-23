@@ -1,7 +1,7 @@
-use super::{super::super::traits::Code, keywords as kw};
+use super::keywords as kw;
 use proc_macro2::TokenStream as TS;
-use quote::quote;
-use syn::{braced, parse::Parse};
+use quote::{quote, ToTokens};
+use syn::parse::Parse;
 
 pub struct RustBlock {
     keyword: kw::rust,
@@ -32,11 +32,12 @@ impl Parse for Expression {
     }
 }
 
-impl Code for Expression {
-    fn get_code(&self) -> proc_macro2::TokenStream {
-        match self {
+impl ToTokens for Expression {
+    fn to_tokens(&self, tokens: &mut TS) {
+        let code = match self {
             Self::RustExpression(code) => code.clone(),
             Self::RustBlock(block) => block.data.clone(),
-        }
+        };
+        tokens.extend(code);
     }
 }

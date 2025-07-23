@@ -1,7 +1,6 @@
-use super::{super::super::traits::Code, keywords as kw};
 use proc_macro2::TokenStream as TS;
-use quote::quote;
-use syn::{braced, custom_keyword, parse::Parse, Token};
+use quote::{quote, ToTokens};
+use syn::{braced, parse::Parse, Token};
 
 pub struct Compute {
     keyword: Token![do],
@@ -19,9 +18,9 @@ impl Parse for Compute {
         })
     }
 }
-impl Code for Compute {
-    fn get_code(&self) -> proc_macro2::TokenStream {
+impl ToTokens for Compute {
+    fn to_tokens(&self, tokens: &mut TS) {
         let code = self.rust_code.clone();
-        quote! {#code}.into()
+        tokens.extend(quote! {#code});
     }
 }

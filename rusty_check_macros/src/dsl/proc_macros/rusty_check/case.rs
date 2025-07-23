@@ -3,9 +3,8 @@ use quote::{quote, ToTokens};
 use syn::{braced, parse::Parse, Token};
 
 use super::{
-    super::super::traits::Code, check::Check, compute::Compute, configure::Config,
-
-    declaration_block::DeclarationBlock, keywords as kw,
+    check::Check, compute::Compute, configure::Config, declaration_block::DeclarationBlock,
+    keywords as kw,
 };
 
 type Given = DeclarationBlock<kw::given>;
@@ -54,14 +53,11 @@ impl Parse for Case {
 
 impl ToTokens for Case {
     fn to_tokens(&self, tokens: &mut TS) {
-        let ident = self.ident.clone();
+        let ident = &self.ident;
         let given = &self.given;
-        let compute = match &self.compute {
-            Some(compute) => compute.get_code(),
-            None => quote! {},
-        };
+        let compute = &self.compute;
         let config = &self.config;
-        let check = self.check.get_code();
+        let check = &self.check;
         tokens.extend(quote! {
             #[cfg(#config)]
             #[test]

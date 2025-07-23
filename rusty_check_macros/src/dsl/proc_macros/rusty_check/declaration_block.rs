@@ -1,9 +1,9 @@
 use std::marker::PhantomData;
 
-use super::{super::super::traits::Code, expression::Expression, keywords as kw};
+use super::{expression::Expression, keywords as kw};
 use proc_macro2::TokenStream as TS;
 
-use quote::{quote, ToTokens, TokenStreamExt};
+use quote::{quote, ToTokens};
 
 use syn::{braced, parse::Parse, Token};
 
@@ -27,7 +27,7 @@ fn parse_assignment<K: Parse>(
         input.parse::<syn::Ident>()?.to_token_stream()
     };
     input.parse::<Token![=]>()?;
-    let exp = input.parse::<Expression>()?.get_code();
+    let exp = input.parse::<Expression>()?;
     let code: TS = quote! {
         #assignment_kw #ident = #exp;
     }
@@ -67,7 +67,6 @@ impl Parse for Assignment<kw::vars> {
     }
 }
 impl Parse for Assignment<kw::consts> {
-
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         parse_assignment(input, quote! {const}.into())
     }
@@ -86,14 +85,6 @@ where
             kw: kw,
             assignments: parsed_assignments,
         })
-    }
-}
-impl<K: Parse> Code for DeclarationBlock<K> {
-    fn get_code(&self) -> proc_macro2::TokenStream {
-        let assignments = self.assignments.iter().map(|a| a.data.clone());
-        quote! {
-            #(#assignments)*
-        }
     }
 }
 

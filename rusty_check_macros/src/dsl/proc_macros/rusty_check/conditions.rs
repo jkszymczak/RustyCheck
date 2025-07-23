@@ -1,9 +1,7 @@
-use super::{
-    super::super::traits::Code, condition::Condition, expression::Expression, keywords as kw,
-};
+use super::{condition::Condition, keywords as kw};
 use proc_macro2::TokenStream as TS;
-use quote::quote;
-use syn::{braced, custom_keyword, parse::Parse, Token};
+use quote::{quote, ToTokens};
+use syn::{parse::Parse, Token};
 
 pub enum Conditions {
     LoopCondition {
@@ -40,12 +38,14 @@ impl Parse for JoinType {
         }
     }
 }
-impl Code for JoinType {
-    fn get_code(&self) -> proc_macro2::TokenStream {
-        match self {
+
+impl ToTokens for JoinType {
+    fn to_tokens(&self, tokens: &mut TS) {
+        let join_type = match self {
             JoinType::Or => quote! {||},
             JoinType::And => quote! {&&},
-        }
+        };
+        tokens.extend(join_type);
     }
 }
 
@@ -107,16 +107,15 @@ impl Parse for Conditions {
     }
 }
 
-impl Code for Conditions {
-    fn get_code(&self) -> proc_macro2::TokenStream {
-        match self {
+impl ToTokens for Conditions {
+    fn to_tokens(&self, tokens: &mut TS) {
+        let conditions = match self {
             Conditions::LoopCondition {
                 loop_type: LoopType::ForEach,
                 collection,
                 element,
                 condition,
             } => {
-                let condition = condition.get_code();
                 quote! { #collection.iter().map(| &#element| #condition ).filter(| &#element | #element == false).count() == 0 }
             }
             Conditions::LoopCondition {
@@ -125,7 +124,6 @@ impl Code for Conditions {
                 element,
                 condition,
             } => {
-                let condition = condition.get_code();
                 quote! { #collection.iter().map(| &#element| #condition ).filter(| &#element | #element == true).count() != 0 }
             }
             Conditions::CompoundCondition {
@@ -133,12 +131,10 @@ impl Code for Conditions {
                 join,
                 right_condition,
             } => {
-                let left = left_condition.get_code();
-                let join = join.get_code();
-                let right = right_condition.get_code();
-                quote! { (#left) #join #right }
+                quote! { (#left_condition) #join #right_condition }
             }
-            Conditions::Condition(condition) => condition.get_code(),
-        }
+            Conditions::Condition(condition) => condition.to_token_stream(),
+        };
+        tokens.extend(conditions);
     }
 }

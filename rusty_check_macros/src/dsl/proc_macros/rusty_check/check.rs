@@ -1,9 +1,7 @@
-use super::{
-    super::super::traits::Code, conditions::Conditions, expression::Expression, keywords as kw,
-};
+use super::{conditions::Conditions, keywords as kw};
 use proc_macro2::TokenStream as TS;
-use quote::quote;
-use syn::{braced, custom_keyword, parse::Parse, Token};
+use quote::{quote, ToTokens};
+use syn::{braced, parse::Parse};
 
 pub struct Check {
     keyword: kw::check,
@@ -25,11 +23,11 @@ impl Parse for Check {
         })
     }
 }
-impl Code for Check {
-    fn get_code(&self) -> proc_macro2::TokenStream {
-        let conditions = self.conditions.get_code();
-        let comment = self.comment.clone();
+impl ToTokens for Check {
+    fn to_tokens(&self, tokens: &mut TS) {
+        let conditions = &self.conditions;
+        let comment = &self.comment;
         // TODO: Add custom message to assert where it would show condition with changed values
-        quote! {assert!(#conditions,#comment);}
+        tokens.extend(quote! {assert!(#conditions,#comment);});
     }
 }

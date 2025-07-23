@@ -1,24 +1,19 @@
 mod dsl;
 use dsl::{
-    attribute_macros::mock_registry::{add_to_registry, TRAIT_REGISTRY},
+    attribute_macros::mock_registry::add_to_registry,
     proc_macros::{
         compose_mocks::compose_mocks::compose_mocks_fn, rusty_check::rusty_check::RustyCheck,
     },
-    traits::Code,
-    traits::MethodDeclaration,
 };
 use proc_macro::TokenStream;
-use quote::{format_ident, quote};
+use quote::{quote, ToTokens};
 use syn::{parse_macro_input, ItemTrait};
 #[proc_macro]
 pub fn rusty_check(input: TokenStream) -> TokenStream {
-    let rust = parse_macro_input!(input as RustyCheck);
-    let output = rust.get_code();
+    parse_macro_input!(input as RustyCheck)
+        .to_token_stream()
+        .into()
     // dbg!(&output);
-    quote! {
-            #output
-    }
-    .into()
 }
 
 #[proc_macro_attribute]
