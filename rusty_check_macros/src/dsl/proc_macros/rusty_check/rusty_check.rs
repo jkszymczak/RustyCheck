@@ -1,7 +1,7 @@
-use super::{super::super::traits::Code, case::Case, global::Global, keywords as kw};
+use super::{case::Case, global::Global, keywords as kw};
 use proc_macro2::TokenStream as TS;
 use quote::{quote, ToTokens};
-use syn::{braced, parse::Parse, Error, Item, Token};
+use syn::{parse::Parse, Item};
 pub struct RustyCheck {
     globals: Option<Global>,
     cases: Vec<Case>,
@@ -50,8 +50,8 @@ fn parse_rust_code_until_case(input: syn::parse::ParseStream) -> syn::Result<TS>
     Ok(item.to_token_stream())
 }
 
-impl Code for RustyCheck {
-    fn get_code(&self) -> proc_macro2::TokenStream {
+impl ToTokens for RustyCheck {
+    fn to_tokens(&self, tokens: &mut TS) {
         let (config, consts, vars) = match &self.globals {
             Some(Global {
                 config,
@@ -61,9 +61,9 @@ impl Code for RustyCheck {
             }) => (config, consts, vars),
             None => (&None, &None, &None),
         };
-        let cases = self.cases.iter().map(|case| case.to_token_stream());
-        let rust_code = self.rust_code.clone();
-        quote! {
+        let cases = &self.cases;
+        let rust_code = &self.rust_code;
+        tokens.extend(quote! {
             #[cfg(all(test,#config))]
             mod tests {
                 #(#rust_code)*
@@ -71,6 +71,6 @@ impl Code for RustyCheck {
                 #vars
                 #(#cases)*
             }
-        }
+        });
     }
 }

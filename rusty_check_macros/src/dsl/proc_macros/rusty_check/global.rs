@@ -1,5 +1,5 @@
 use super::{configure::Config, declaration_block::DeclarationBlock, keywords as kw};
-use syn::{braced, parse::Parse, token::Brace, Ident, Token};
+use syn::{braced, parse::Parse};
 
 type Consts = DeclarationBlock<kw::consts>;
 type Vars = DeclarationBlock<kw::vars>;

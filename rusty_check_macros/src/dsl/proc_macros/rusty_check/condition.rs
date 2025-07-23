@@ -1,7 +1,7 @@
-use super::{super::super::traits::Code, expression::Expression, keywords as kw};
+use super::{expression::Expression, keywords as kw};
 use proc_macro2::TokenStream as TS;
-use quote::quote;
-use syn::{braced, custom_keyword, parse::Parse, Token};
+use quote::{quote, ToTokens};
+use syn::parse::Parse;
 
 enum Symbol {
     Equal,
@@ -48,25 +48,28 @@ impl Parse for Symbol {
     }
 }
 
-impl Code for OtherSymbol {
-    fn get_code(&self) -> proc_macro2::TokenStream {
-        match self {
-            Self::Less => quote! {<}.into(),
-            Self::Greater => quote! {>}.into(),
-        }
+impl ToTokens for OtherSymbol {
+    fn to_tokens(&self, tokens: &mut TS) {
+        let symbol = match self {
+            Self::Less => quote! {<},
+            Self::Greater => quote! {>},
+        };
+        tokens.extend(symbol);
     }
 }
 
-impl Code for Symbol {
-    fn get_code(&self) -> proc_macro2::TokenStream {
-        match self {
+impl ToTokens for Symbol {
+    fn to_tokens(&self, tokens: &mut TS) {
+        let symbol = match self {
             Symbol::Equal => quote! {==},
             Symbol::EqualOr(OtherSymbol::Less) => quote! {<=},
             Symbol::EqualOr(OtherSymbol::Greater) => quote! {>=},
-            Symbol::Other(other_symbol) => other_symbol.get_code(),
-        }
+            Symbol::Other(other_symbol) => other_symbol.to_token_stream(),
+        };
+        tokens.extend(symbol);
     }
 }
+
 impl Parse for Condition {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         let left = input.parse::<Expression>()?;
@@ -80,11 +83,10 @@ impl Parse for Condition {
     }
 }
 
-impl Code for Condition {
-    fn get_code(&self) -> proc_macro2::TokenStream {
-        let left = self.left.get_code().clone();
-        let symbol = self.symbol.get_code().clone();
-        let right = self.right.get_code().clone();
-        quote! { #left #symbol #right }
+impl ToTokens for Condition {
+    fn to_tokens(&self, tokens: &mut TS) {
+        self.left.to_tokens(tokens);
+        self.symbol.to_tokens(tokens);
+        self.right.to_tokens(tokens);
     }
 }
