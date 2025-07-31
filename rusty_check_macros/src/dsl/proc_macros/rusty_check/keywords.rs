@@ -4,6 +4,7 @@ syn::custom_keyword!(given);
 // keyword do
 syn::custom_keyword!(check);
 // condition keywords
+syn::custom_keyword!(not);
 syn::custom_keyword!(equal);
 syn::custom_keyword!(less);
 syn::custom_keyword!(greater);

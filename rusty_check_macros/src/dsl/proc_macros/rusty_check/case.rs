@@ -56,10 +56,14 @@ impl ToTokens for Case {
         let ident = &self.ident;
         let given = &self.given;
         let compute = &self.compute;
-        let config = &self.config;
+        let config = &self.config.as_ref().map(|c| {
+            quote! {
+                #[cfg(#c)]
+            }
+        });
         let check = &self.check;
         tokens.extend(quote! {
-            #[cfg(#config)]
+            #config
             #[test]
             fn #ident() {
                 #given
