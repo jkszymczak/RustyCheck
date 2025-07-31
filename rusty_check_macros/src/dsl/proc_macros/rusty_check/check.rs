@@ -1,4 +1,4 @@
-use super::{conditions::Conditions, keywords as kw};
+use super::{super::helpers::ToComment, conditions::Conditions, keywords as kw};
 use proc_macro2::TokenStream as TS;
 use quote::{quote, ToTokens};
 use syn::{braced, parse::Parse};
@@ -26,8 +26,7 @@ impl Parse for Check {
 impl ToTokens for Check {
     fn to_tokens(&self, tokens: &mut TS) {
         let conditions = &self.conditions;
-        let comment = &self.comment;
-        // TODO: Add custom message to assert where it would show condition with changed values
+        let comment = &self.conditions.to_comment();
         tokens.extend(quote! {assert!(#conditions,#comment);});
     }
 }

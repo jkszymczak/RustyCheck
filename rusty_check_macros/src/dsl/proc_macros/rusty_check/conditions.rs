@@ -1,4 +1,7 @@
-use super::{condition::Condition, keywords as kw};
+use crate::dsl::proc_macros::rusty_check::conditions;
+
+use super::super::helpers::{filter_out_streams_with_ident, Comment, ToComment};
+use super::{condition::Condition, expression, keywords as kw};
 use proc_macro2::TokenStream as TS;
 use quote::{quote, ToTokens};
 use syn::{parse::Parse, Token};
@@ -46,6 +49,24 @@ impl ToTokens for JoinType {
             JoinType::And => quote! {&&},
         };
         tokens.extend(join_type);
+    }
+}
+
+impl ToString for JoinType {
+    fn to_string(&self) -> String {
+        match self {
+            JoinType::Or => "or".to_owned(),
+            JoinType::And => "and".to_owned(),
+        }
+    }
+}
+
+impl ToString for LoopType {
+    fn to_string(&self) -> String {
+        match self {
+            LoopType::ForAny => "for any".to_owned(),
+            LoopType::ForEach => "for each".to_owned(),
+        }
     }
 }
 
@@ -136,5 +157,78 @@ impl ToTokens for Conditions {
             Conditions::Condition(condition) => condition.to_token_stream(),
         };
         tokens.extend(conditions);
+    }
+}
+
+impl ToString for Conditions {
+    fn to_string(&self) -> String {
+        match self {
+            Conditions::LoopCondition {
+                loop_type,
+                collection,
+                element,
+                condition,
+            } => {
+                loop_type.to_string()
+                    + " "
+                    + collection.to_string().as_str()
+                    + " "
+                    + element.to_string().as_str()
+                    + ", "
+                    + condition.to_string().as_str()
+            }
+            Conditions::CompoundCondition {
+                left_condition,
+                join,
+                right_condition,
+            } => {
+                left_condition.to_string()
+                    + " "
+                    + join.to_string().as_str()
+                    + " "
+                    + right_condition.to_string().as_str()
+            }
+            Conditions::Condition(condition) => condition.to_string(),
+        }
+    }
+}
+
+impl ToComment for Conditions {
+    fn to_comment(&self) -> Comment {
+        match &self {
+            Conditions::LoopCondition {
+                loop_type: _,
+                collection,
+                element,
+                condition,
+            } => {
+                let cond_comment = condition.to_comment();
+                let comment = self.to_string();
+                let filtered_values = filter_out_streams_with_ident(&cond_comment.values, element)
+                    .into_iter()
+                    .map(|v| v.clone())
+                    .collect();
+                Comment {
+                    string: comment,
+                    values: vec![vec![collection.to_token_stream()], filtered_values].concat(),
+                }
+            }
+            Conditions::CompoundCondition {
+                left_condition,
+                join: _,
+                right_condition,
+            } => {
+                let left_comment = left_condition.to_comment();
+                let right_comment = right_condition.to_comment();
+                let comment = self.to_string();
+                let left_value = left_comment.values;
+                let right_value = right_comment.values;
+                Comment {
+                    string: comment,
+                    values: vec![left_value, right_value].concat(),
+                }
+            }
+            Conditions::Condition(condition) => condition.to_comment(),
+        }
     }
 }
