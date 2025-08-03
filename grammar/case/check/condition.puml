@@ -1,0 +1,8 @@
+@startebnf
+condition = expression, symbol, expression;
+symbol = "equal"
+         | other_symbol
+         | "equal or", other_symbol;
+other_symbol = "less than"
+               | "greater than";
+@endebnf

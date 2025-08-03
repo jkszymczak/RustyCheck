@@ -8,6 +8,10 @@ use dsl::{
 use proc_macro::TokenStream;
 use quote::{quote, ToTokens};
 use syn::{parse_macro_input, ItemTrait};
+
+/// RustyCheck procedural macro that processes the `rusty_check!` DSL.
+/// Follows grammar from this diagram:
+#[doc = include_str!("../../grammar/grammar.svg")]
 #[proc_macro]
 pub fn rusty_check(input: TokenStream) -> TokenStream {
     parse_macro_input!(input as RustyCheck)

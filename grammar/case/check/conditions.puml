@@ -1,0 +1,6 @@
+@startebnf
+conditions = condition, ("or" | "and" ), conditions
+             | "for", ("any"|"each"), identifier, "in", identifier, ",", conditions
+             | condition;
+!include condition.puml    
+@endebnf

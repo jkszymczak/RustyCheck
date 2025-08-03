@@ -1,0 +1,6 @@
+@startebnf
+case = "case", identifier, "{", [given], [compute], check, "}";
+!include given.puml
+!include compute.puml
+!include check/check.puml
+@endebnf

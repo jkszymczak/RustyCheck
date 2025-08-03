@@ -1,0 +1,4 @@
+@startebnf
+check = "check", "{", conditions, "}";
+!include conditions.puml
+@endebnf

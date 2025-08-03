@@ -1,0 +1,11 @@
+@startebnf
+global = "global", "{", [configure],  global_assignments ,"}";
+!include cfg.puml
+global_assignments = [global_constants], [global_variables] | [global_variables], [global_constants];
+global_variables = ["vars", "{", [assignments], "}"]; 
+global_constants = ["consts", "{", [non_mutable_assignments], "}"];
+non_mutable_assignments = non_mutable_assignment, {",", non_mutable_assignment};
+!ifndef MAIN_RENDER
+!include ../assignment.puml
+!endif
+@endebnf

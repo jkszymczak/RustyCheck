@@ -3,6 +3,19 @@ use syn::{braced, parse::Parse};
 
 type Consts = DeclarationBlock<kw::consts>;
 type Vars = DeclarationBlock<kw::vars>;
+
+/// Represents a block of global declarations in the RustyCheck DSL.
+///
+/// A `Global` block is used to define global configurations, constants, and variables.
+/// It contains:
+/// - `kw`: The `global` keyword.
+/// - `config`: An optional configuration block.
+/// - `consts`: An optional block of constants.
+/// - `vars`: An optional block of variables.
+///
+/// represents grammar from this diagram:
+///
+#[doc = include_str!("../../../../../grammar/global/global.svg")]
 pub struct Global {
     kw: kw::global,
     pub config: Option<Config>,
@@ -11,6 +24,16 @@ pub struct Global {
 }
 
 impl Parse for Global {
+    /// Parses a `Global` block from the input stream.
+    ///
+    /// # Parameters
+    /// - `input`: The parse stream to read from.
+    ///
+    /// # Returns
+    /// A parsed `Global` instance containing the `global` keyword, configuration, constants, and variables.
+    ///
+    /// # Errors
+    /// Returns a `syn::Error` if the input cannot be parsed as a valid `Global` block or if duplicate blocks are found.
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         let kw = input.parse::<kw::global>()?;
         let content;
@@ -24,7 +47,7 @@ impl Parse for Global {
             if content.peek(kw::cfg) {
                 let item = content.parse::<Config>()?;
                 if config.is_some() {
-                    // return Err(syn::Error::new_spanned(item, "Duplicate `configure` block"));
+                    return Err(syn::Error::new_spanned(item, "Duplicate `configure` block"));
                     todo!()
                 }
                 config = Some(item);

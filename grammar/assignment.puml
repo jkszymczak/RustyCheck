@@ -1,0 +1,7 @@
+@startebnf
+assignments = {assignment};
+assignment = non_mutable_assignment 
+            | mutable_assignment;
+non_mutable_assignment = identifier, "=", expression;
+mutable_assignment = "mut", non_mutable_assignment;
+@endebnf

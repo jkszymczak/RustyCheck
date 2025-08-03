@@ -11,6 +11,6 @@ repos:
   rev: v0.0.1
   hooks:
       - id: run-command
-        args: [plantuml,-tsvg]
+        args: [plantuml,-tsvg, -r .]
         files: \.puml$
         verbose: true
