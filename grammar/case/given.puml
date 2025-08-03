@@ -1,0 +1,6 @@
+@startebnf
+given = "given", "{", assignments, "}";
+!ifndef MAIN_RENDER
+!include ../assignment.puml
+!endif
+@endebnf

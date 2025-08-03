@@ -1,0 +1,3 @@
+@startebnf
+compute = "do", "{", rust_code, "}";
+@endebnf

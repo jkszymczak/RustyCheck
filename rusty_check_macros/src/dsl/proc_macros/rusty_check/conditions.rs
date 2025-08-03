@@ -6,32 +6,63 @@ use proc_macro2::TokenStream as TS;
 use quote::{quote, ToTokens};
 use syn::{parse::Parse, Token};
 
+/// Represents different types of conditions in the RustyCheck DSL.
+///
+/// Variants:
+/// - `LoopCondition`: A condition that involves iterating over a collection.
+/// - `CompoundCondition`: A condition composed of two sub-conditions joined by a logical operator.
+/// - `Condition`: A single condition.
+///
+/// represents grammar from this diagram:
+///
+#[doc = include_str!("../../../../../grammar/case/check/conditions.svg")]
 pub enum Conditions {
     LoopCondition {
+        /// The type of loop (e.g., `ForAny` or `ForEach`).
         loop_type: LoopType,
+        /// The collection being iterated over.
         collection: syn::Ident,
+        /// The element being iterated.
         element: syn::Ident,
+        /// The condition applied to each element.
         condition: Box<Conditions>,
     },
-    // TODO: need to work on separation
     CompoundCondition {
+        /// The left-hand side condition.
         left_condition: Condition,
+        /// The logical operator joining the conditions (`And` or `Or`).
         join: JoinType,
+        /// The right-hand side condition.
         right_condition: Box<Conditions>,
     },
+    /// A single condition.
     Condition(Condition),
 }
 
+/// Represents the type of loop used in a `LoopCondition`.
+///
+/// Variants:
+/// - `ForAny`: A loop that checks if any element satisfies the condition.
+/// - `ForEach`: A loop that checks if all elements satisfy the condition.
 pub enum LoopType {
     ForAny,
     ForEach,
 }
+
+/// Represents the logical operator used in a `CompoundCondition`.
+///
+/// Variants:
+/// - `Or`: Logical OR (`||`).
+/// - `And`: Logical AND (`&&`).
 pub enum JoinType {
     Or,
     And,
 }
 
 impl Parse for JoinType {
+    /// Parses a `JoinType` from the input stream.
+    ///
+    /// Recognizes the keywords `and` and `or`.
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         if let Ok(_) = input.parse::<kw::and>() {
             Ok(JoinType::And)
@@ -43,6 +74,10 @@ impl Parse for JoinType {
 }
 
 impl ToTokens for JoinType {
+    /// Converts a `JoinType` into its token representation.
+    ///
+    /// - `Or` -> `||`
+    /// - `And` -> `&&`
     fn to_tokens(&self, tokens: &mut TS) {
         let join_type = match self {
             JoinType::Or => quote! {||},
@@ -53,6 +88,10 @@ impl ToTokens for JoinType {
 }
 
 impl ToString for JoinType {
+    /// Converts a `JoinType` into a human-readable string.
+    ///
+    /// - `Or` -> `"or"`
+    /// - `And` -> `"and"`
     fn to_string(&self) -> String {
         match self {
             JoinType::Or => "or".to_owned(),
@@ -62,6 +101,10 @@ impl ToString for JoinType {
 }
 
 impl ToString for LoopType {
+    /// Converts a `LoopType` into a human-readable string.
+    ///
+    /// - `ForAny` -> `"for any"`
+    /// - `ForEach` -> `"for each"`
     fn to_string(&self) -> String {
         match self {
             LoopType::ForAny => "for any".to_owned(),
@@ -70,13 +113,24 @@ impl ToString for LoopType {
     }
 }
 
+/// Checks if the input stream represents a `for each` loop.
 fn is_for_each(input: &syn::parse::ParseStream) -> bool {
     input.peek(Token![for]) && input.peek2(kw::each)
 }
+
+/// Checks if the input stream represents a `for any` loop.
 fn is_in_any(input: &syn::parse::ParseStream) -> bool {
     input.peek(Token![for]) && input.peek2(kw::any)
 }
 
+/// Parses a `for` loop condition from the input stream.
+///
+/// # Parameters
+/// - `input`: The parse stream to read from.
+/// - `loop_type`: The type of loop (`ForAny` or `ForEach`).
+///
+/// # Returns
+/// A `Conditions::LoopCondition` representing the parsed loop.
 fn parse_for_loop(input: syn::parse::ParseStream, loop_type: LoopType) -> syn::Result<Conditions> {
     input.parse::<Token![for]>()?;
     match loop_type {
@@ -100,6 +154,9 @@ fn parse_for_loop(input: syn::parse::ParseStream, loop_type: LoopType) -> syn::R
     })
 }
 
+/// Parses a loop condition from the input stream.
+///
+/// Determines whether the loop is a `for each` or `for any` loop and parses accordingly.
 fn parse_loop_condition(input: syn::parse::ParseStream) -> syn::Result<Conditions> {
     if is_for_each(&input) {
         parse_for_loop(&input, LoopType::ForEach)
@@ -111,6 +168,9 @@ fn parse_loop_condition(input: syn::parse::ParseStream) -> syn::Result<Condition
 }
 
 impl Parse for Conditions {
+    /// Parses a `Conditions` instance from the input stream.
+    ///
+    /// Handles `LoopCondition`, `CompoundCondition`, and `Condition` variants.
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         if is_for_each(&input) || is_in_any(&input) {
             return parse_loop_condition(input);
@@ -129,6 +189,9 @@ impl Parse for Conditions {
 }
 
 impl ToTokens for Conditions {
+    /// Converts a `Conditions` instance into its token representation.
+    ///
+    /// Generates Rust code for the condition, including loops and compound conditions.
     fn to_tokens(&self, tokens: &mut TS) {
         let conditions = match self {
             Conditions::LoopCondition {
@@ -161,6 +224,9 @@ impl ToTokens for Conditions {
 }
 
 impl ToString for Conditions {
+    /// Converts a `Conditions` instance into a human-readable string.
+    ///
+    /// Handles all variants, including loops and compound conditions.
     fn to_string(&self) -> String {
         match self {
             Conditions::LoopCondition {
@@ -194,6 +260,9 @@ impl ToString for Conditions {
 }
 
 impl ToComment for Conditions {
+    /// Converts a `Conditions` instance into a `Comment` object.
+    ///
+    /// The `Comment` includes a string representation of the condition and its associated values.
     fn to_comment(&self) -> Comment {
         match &self {
             Conditions::LoopCondition {
