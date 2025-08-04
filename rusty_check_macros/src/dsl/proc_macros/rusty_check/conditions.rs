@@ -21,7 +21,7 @@ pub enum Conditions {
         /// The type of loop (e.g., `ForAny` or `ForEach`).
         loop_type: LoopType,
         /// The collection being iterated over.
-        collection: syn::Ident,
+        collection: syn::Expr,
         /// The element being iterated.
         element: syn::Ident,
         /// The condition applied to each element.
@@ -143,7 +143,7 @@ fn parse_for_loop(input: syn::parse::ParseStream, loop_type: LoopType) -> syn::R
     }
     let element = input.parse::<syn::Ident>()?;
     input.parse::<Token![in]>()?;
-    let collection = input.parse::<syn::Ident>()?;
+    let collection = input.parse::<syn::Expr>()?;
     input.parse::<Token![,]>()?;
     let conditions = input.parse::<Conditions>()?;
     Ok(Conditions::LoopCondition {
@@ -200,7 +200,10 @@ impl ToTokens for Conditions {
                 element,
                 condition,
             } => {
-                quote! { #collection.iter().map(| &#element| #condition ).filter(| &#element | #element == false).count() == 0 }
+                quote! { (#collection).into_iter().all(| item| {
+                    let #element = item;
+                    #condition
+                } )}
             }
             Conditions::LoopCondition {
                 loop_type: LoopType::ForAny,
@@ -208,7 +211,7 @@ impl ToTokens for Conditions {
                 element,
                 condition,
             } => {
-                quote! { #collection.iter().map(| &#element| #condition ).filter(| &#element | #element == true).count() != 0 }
+                quote! { #collection.into_iter().any(| #element| #condition ) }
             }
             Conditions::CompoundCondition {
                 left_condition,
@@ -237,7 +240,9 @@ impl ToString for Conditions {
             } => {
                 loop_type.to_string()
                     + " "
-                    + collection.to_string().as_str()
+                    + collection.to_token_stream().to_string().as_str()
+                    + " "
+                    + "in"
                     + " "
                     + element.to_string().as_str()
                     + ", "
