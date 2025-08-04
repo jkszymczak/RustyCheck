@@ -44,9 +44,9 @@ pub enum OtherSymbol {
 /// - `symbol`: The operator, represented as a [`Symbol`].
 /// - `right`: The right-hand side expression.
 pub struct Condition {
-    pub left: Expression,
+    pub left: syn::Expr,
     pub symbol: Symbol,
-    pub right: Expression,
+    pub right: syn::Expr,
 }
 
 impl Parse for OtherSymbol {
@@ -142,9 +142,11 @@ impl Parse for Condition {
     /// - A `Symbol` operator.
     /// - A right-hand side expression.
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        let left = input.parse::<Expression>()?;
+        let left = input.parse::<syn::Expr>()?;
         let symbol = input.parse::<Symbol>()?;
-        let right = input.parse::<Expression>()?;
+        let right = input.parse::<syn::Expr>()?;
+        dbg!(&right);
+        dbg!(&left);
         Ok(Condition {
             left,
             symbol,

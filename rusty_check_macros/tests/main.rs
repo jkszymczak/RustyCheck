@@ -29,7 +29,7 @@ rusty_check! {
 
         }
         check {
-            for each v in a, v less than b
+            for each v in &a, *v less than b
         }
     }
     case test_negation {
