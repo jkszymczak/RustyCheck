@@ -1,5 +1,3 @@
-use crate::dsl::proc_macros::rusty_check::conditions;
-
 use super::super::helpers::{filter_out_streams_with_ident, Comment, ToComment};
 use super::{condition::Condition, expression, keywords as kw};
 use proc_macro2::TokenStream as TS;
@@ -200,10 +198,7 @@ impl ToTokens for Conditions {
                 element,
                 condition,
             } => {
-                quote! { (#collection).into_iter().all(| item| {
-                    let #element = item;
-                    #condition
-                } )}
+                quote! { (#collection).into_iter().all(|#element|#condition)}
             }
             Conditions::LoopCondition {
                 loop_type: LoopType::ForAny,
@@ -211,14 +206,14 @@ impl ToTokens for Conditions {
                 element,
                 condition,
             } => {
-                quote! { #collection.into_iter().any(| #element| #condition ) }
+                quote! { (#collection).into_iter().any(|#element|#condition ) }
             }
             Conditions::CompoundCondition {
                 left_condition,
                 join,
                 right_condition,
             } => {
-                quote! { (#left_condition) #join #right_condition }
+                quote! { (#left_condition #join #right_condition) }
             }
             Conditions::Condition(condition) => condition.to_token_stream(),
         };
@@ -304,5 +299,123 @@ impl ToComment for Conditions {
             }
             Conditions::Condition(condition) => condition.to_comment(),
         }
+    }
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use syn::parse_str;
+
+    #[test]
+    fn test_parse_condition() {
+        let input = "x greater than 5";
+        let condition = syn::parse_str::<Condition>(input).unwrap();
+        assert_eq!(condition.left.to_token_stream().to_string(), "x");
+        assert_eq!(condition.symbol.to_token_stream().to_string(), ">");
+        assert_eq!(condition.right.to_token_stream().to_string(), "5");
+    }
+
+    #[test]
+    fn test_parse_conditions() {
+        let input = "x greater than 5 and y less than 10";
+        let conditions = syn::parse_str::<Conditions>(input).unwrap();
+        match conditions {
+            Conditions::CompoundCondition {
+                left_condition,
+                join,
+                right_condition,
+            } => {
+                assert_eq!(left_condition.to_string(), "x greater than 5");
+                assert_eq!(join.to_string(), "and");
+                assert_eq!(right_condition.to_string(), "y less than 10");
+            }
+            _ => panic!("Expected CompoundCondition"),
+        }
+    }
+
+    #[test]
+    fn test_parse_loop_condition_for_each() {
+        let input = "for each item in items, item greater than 5";
+        let conditions = syn::parse_str::<Conditions>(input).unwrap();
+        match conditions {
+            Conditions::LoopCondition {
+                loop_type,
+                collection,
+                element,
+                condition,
+            } => {
+                assert_eq!(loop_type.to_string(), "for each");
+                assert_eq!(collection.to_token_stream().to_string(), "items");
+                assert_eq!(element.to_string(), "item");
+                assert_eq!(condition.to_string(), "item greater than 5");
+            }
+            _ => panic!("Expected LoopCondition"),
+        }
+    }
+
+    #[test]
+    fn test_parse_loop_condition_for_any() {
+        let input = "for any item in items, item greater than 5";
+        let conditions = syn::parse_str::<Conditions>(input).unwrap();
+        match conditions {
+            Conditions::LoopCondition {
+                loop_type,
+                collection,
+                element,
+                condition,
+            } => {
+                assert_eq!(loop_type.to_string(), "for any");
+                assert_eq!(collection.to_token_stream().to_string(), "items");
+                assert_eq!(element.to_string(), "item");
+                assert_eq!(condition.to_string(), "item greater than 5");
+            }
+            _ => panic!("Expected LoopCondition"),
+        }
+    }
+
+    #[test]
+    fn test_to_tokens_condition() {
+        let input = "x greater than 5";
+        let condition = parse_str::<Conditions>(input).unwrap();
+        assert_eq!(
+            condition.to_token_stream().to_string(),
+            parse_str::<TS>("(x > 5)").unwrap().to_string()
+        );
+    }
+
+    #[test]
+    fn test_to_tokens_conditions() {
+        let input = "x greater than 5 and y less than 10";
+        let conditions = parse_str::<Conditions>(input).unwrap();
+        assert_eq!(
+            conditions.to_token_stream().to_string(),
+            parse_str::<TS>("((x > 5) && (y < 10))")
+                .unwrap()
+                .to_string()
+        );
+    }
+
+    #[test]
+    fn test_to_tokens_loop_condition_for_each() {
+        let input = "for each item in items, item greater than 5";
+        let conditions = parse_str::<Conditions>(input).unwrap();
+        assert_eq!(
+            conditions.to_token_stream().to_string(),
+            parse_str::<TS>("(items).into_iter().all(| item| (item > 5))")
+                .unwrap()
+                .to_string()
+        );
+    }
+
+    #[test]
+    fn test_to_tokens_loop_condition_for_any() {
+        let input = "for any item in items, item greater than 5";
+        let conditions = parse_str::<Conditions>(input).unwrap();
+        assert_eq!(
+            conditions.to_token_stream().to_string(),
+            parse_str::<TS>("(items).into_iter().any(| item| (item > 5))")
+                .unwrap()
+                .to_string()
+        );
     }
 }

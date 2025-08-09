@@ -58,3 +58,21 @@ impl ToTokens for Check {
         tokens.extend(quote! {assert!(#conditions,#comment);});
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use syn::parse_str;
+
+    use super::*;
+    #[test]
+    fn test_check() {
+        let check = parse_str::<Check>("check { a equal 10 }")
+            .unwrap()
+            .to_token_stream()
+            .to_string();
+        let result = parse_str::<TS>("assert!((a==10),\"a equal 10 where, a={:?}\" ,a );")
+            .unwrap()
+            .to_string();
+        assert_eq!(check, result);
+    }
+}

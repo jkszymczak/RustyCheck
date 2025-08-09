@@ -178,3 +178,103 @@ impl<K: Parse> ToTokens for DeclarationBlock<K> {
         tokens.extend(code.into_iter());
     }
 }
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use proc_macro2::TokenStream;
+    use quote::quote;
+    use syn::{parse, parse2, parse_quote, parse_str, Token};
+
+    #[test]
+    fn test_parse_assignment_given() {
+        let input: TokenStream = quote! {
+            x = 42
+        };
+        let parsed: Assignment<kw::given> = parse2(input).unwrap();
+        assert_eq!(
+            parsed.data.to_string(),
+            parse_str::<TS>("let x = 42;").unwrap().to_string()
+        );
+    }
+
+    #[test]
+    fn test_parse_assignment_given_mut() {
+        let input: TokenStream = quote! {
+            mut y = 100
+        };
+        let parsed: Assignment<kw::given> = parse2(input).unwrap();
+        assert_eq!(
+            parsed.data.to_string(),
+            parse_str::<TS>("let mut y = 100;").unwrap().to_string()
+        );
+    }
+
+    #[test]
+    fn test_parse_assignment_vars() {
+        let input: TokenStream = quote! {
+            z = 50
+        };
+        let parsed: Assignment<kw::vars> = parse2(input).unwrap();
+        assert_eq!(parsed.data.to_string(), "static z = 50 ;");
+    }
+
+    #[test]
+    fn test_parse_assignment_vars_mut() {
+        let input: TokenStream = quote! {
+            mut w = 75
+        };
+        let parsed: Assignment<kw::vars> = parse2(input).unwrap();
+        assert_eq!(parsed.data.to_string(), "static mut w = 75 ;");
+    }
+
+    #[test]
+    fn test_parse_assignment_consts() {
+        let input: TokenStream = quote! {
+            c = 10
+        };
+        let parsed: Assignment<kw::consts> = parse2(input).unwrap();
+        assert_eq!(parsed.data.to_string(), "const c = 10 ;");
+    }
+
+    #[test]
+    fn test_parse_declaration_block_given() {
+        let input: TokenStream = quote! {
+            given { x = 42, y = 100 }
+        };
+        let parsed: DeclarationBlock<kw::given> = parse2(input).unwrap();
+        assert_eq!(parsed.assignments.len(), 2);
+        assert_eq!(parsed.assignments[0].data.to_string(), "let x = 42 ;");
+        assert_eq!(parsed.assignments[1].data.to_string(), "let y = 100 ;");
+    }
+
+    #[test]
+    fn test_parse_declaration_block_vars() {
+        let input: TokenStream = quote! {
+            vars { z = 50, w = 75 }
+        };
+        let parsed: DeclarationBlock<kw::vars> = parse2(input).unwrap();
+        assert_eq!(parsed.assignments.len(), 2);
+        assert_eq!(parsed.assignments[0].data.to_string(), "static z = 50 ;");
+        assert_eq!(parsed.assignments[1].data.to_string(), "static w = 75 ;");
+    }
+
+    #[test]
+    fn test_parse_declaration_block_consts() {
+        let input: TokenStream = quote! {
+            consts { c = 10 }
+        };
+        let parsed: DeclarationBlock<kw::consts> = parse2(input).unwrap();
+        assert_eq!(parsed.assignments.len(), 1);
+        assert_eq!(parsed.assignments[0].data.to_string(), "const c = 10 ;");
+    }
+
+    #[test]
+    fn test_to_tokens_declaration_block() {
+        let block: DeclarationBlock<kw::given> = parse_quote! {
+            given { x = 42, y = 100 }
+        };
+        let tokens = block.to_token_stream();
+
+        assert_eq!(tokens.to_string(), "let x = 42 ; let y = 100 ;");
+    }
+}
