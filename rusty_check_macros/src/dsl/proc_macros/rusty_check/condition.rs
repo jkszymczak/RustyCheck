@@ -20,6 +20,7 @@ use syn::{
 /// represents grammar from this diagram:
 ///
 #[doc = include_str!("../../../../../grammar/case/check/condition.svg")]
+#[derive(Debug, PartialEq, Eq)]
 pub enum Symbol {
     Equal,
     EqualOr(OtherSymbol),
@@ -32,6 +33,8 @@ pub enum Symbol {
 /// Variants:
 /// - `Less`: Represents the `<` operator.
 /// - `Greater`: Represents the `>` operator.
+
+#[derive(Debug, PartialEq, Eq)]
 pub enum OtherSymbol {
     Less,
     Greater,
@@ -43,6 +46,8 @@ pub enum OtherSymbol {
 /// - `left`: The left-hand side expression.
 /// - `symbol`: The operator, represented as a [`Symbol`].
 /// - `right`: The right-hand side expression.
+
+#[derive(Debug, PartialEq, Eq)]
 pub struct Condition {
     pub left: syn::Expr,
     pub symbol: Symbol,
@@ -160,9 +165,12 @@ impl ToTokens for Condition {
     ///
     /// Combines the left-hand side, operator, and right-hand side into a single token stream.
     fn to_tokens(&self, tokens: &mut TS) {
-        self.left.to_tokens(tokens);
-        self.symbol.to_tokens(tokens);
-        self.right.to_tokens(tokens);
+        let left = &self.left;
+        let symbol = &self.symbol;
+        let right = &self.right;
+        tokens.extend(quote! {
+            ( #left #symbol #right )
+        });
     }
 }
 
@@ -228,5 +236,145 @@ impl ToComment for Condition {
             string: condition_string,
             values: values,
         }
+    }
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use syn::{parse_macro_input, parse_str};
+    #[test]
+    fn test_parse_other_symbol() {
+        let input: OtherSymbol = parse_str("less than").unwrap();
+        assert_eq!(input, OtherSymbol::Less);
+        let input: OtherSymbol = parse_str("greater than").unwrap();
+        assert_eq!(input, OtherSymbol::Greater);
+    }
+
+    #[test]
+    fn test_parse_symbol() {
+        let symbol: Symbol = parse_str("equal or less than").unwrap();
+        assert_eq!(symbol, Symbol::EqualOr(OtherSymbol::Less));
+
+        let symbol: Symbol = parse_str("equal or greater than").unwrap();
+        assert_eq!(symbol, Symbol::EqualOr(OtherSymbol::Greater));
+
+        let symbol: Symbol = parse_str("equal").unwrap();
+        assert_eq!(symbol, Symbol::Equal);
+
+        let symbol: Symbol = parse_str("less than").unwrap();
+        assert_eq!(symbol, Symbol::Other(OtherSymbol::Less));
+
+        let symbol: Symbol = parse_str("greater than").unwrap();
+        assert_eq!(symbol, Symbol::Other(OtherSymbol::Greater));
+
+        let symbol: Symbol = parse_str("not equal").unwrap();
+        assert_eq!(symbol, Symbol::Not(Box::new(Symbol::Equal)));
+    }
+
+    #[test]
+    fn test_parse_condition() {
+        let condition: Condition = parse_str("10 less than 20").unwrap();
+        assert_eq!(condition.left.to_token_stream().to_string(), "10");
+        assert_eq!(condition.symbol, Symbol::Other(OtherSymbol::Less));
+        assert_eq!(condition.right.to_token_stream().to_string(), "20");
+
+        let condition: Condition = parse_str("30 equal or greater than 40").unwrap();
+        assert_eq!(condition.left.to_token_stream().to_string(), "30");
+        assert_eq!(condition.symbol, Symbol::EqualOr(OtherSymbol::Greater));
+        assert_eq!(condition.right.to_token_stream().to_string(), "40");
+
+        let condition: Condition = parse_str("50 equal 60").unwrap();
+        assert_eq!(condition.left.to_token_stream().to_string(), "50");
+        assert_eq!(condition.symbol, Symbol::Equal);
+        assert_eq!(condition.right.to_token_stream().to_string(), "60");
+
+        let condition: Condition = parse_str("70 not greater than 80").unwrap();
+        assert_eq!(condition.left.to_token_stream().to_string(), "70");
+        assert_eq!(
+            condition.symbol,
+            Symbol::Not(Box::new(Symbol::Other(OtherSymbol::Greater)))
+        );
+        assert_eq!(condition.right.to_token_stream().to_string(), "80");
+    }
+
+    #[test]
+    fn test_to_tokens_other_symbol() {
+        let other_less = OtherSymbol::Less;
+        let token_stream: TS = quote! {#other_less};
+        assert_eq!(token_stream.to_string(), "<");
+
+        let other_greater = OtherSymbol::Greater;
+        let token_stream: TS = quote! {#other_greater};
+        assert_eq!(token_stream.to_string(), ">");
+    }
+
+    #[test]
+    fn test_to_tokens_symbol() {
+        let symbol_equal = Symbol::Equal;
+        let token_stream: TS = quote! {#symbol_equal};
+        assert_eq!(token_stream.to_string(), "==");
+
+        let symbol_less_or_equal = Symbol::EqualOr(OtherSymbol::Less);
+        let token_stream: TS = quote! {#symbol_less_or_equal};
+        assert_eq!(token_stream.to_string(), "<=");
+
+        let symbol_greater_or_equal = Symbol::EqualOr(OtherSymbol::Greater);
+        let token_stream: TS = quote! {#symbol_greater_or_equal};
+        assert_eq!(token_stream.to_string(), ">=");
+
+        let symbol_other_less = Symbol::Other(OtherSymbol::Less);
+        let token_stream: TS = quote! {#symbol_other_less};
+        assert_eq!(token_stream.to_string(), "<");
+
+        let symbol_other_greater = Symbol::Other(OtherSymbol::Greater);
+        let token_stream: TS = quote! {#symbol_other_greater};
+        assert_eq!(token_stream.to_string(), ">");
+
+        let symbol_not_equal = Symbol::Not(Box::new(Symbol::Equal));
+        let token_stream: TS = quote! {#symbol_not_equal};
+        assert_eq!(token_stream.to_string(), "!=");
+
+        let symbol_not_less = Symbol::Not(Box::new(Symbol::Other(OtherSymbol::Less)));
+        let token_stream: TS = quote! {#symbol_not_less};
+        assert_eq!(token_stream.to_string(), ">=");
+
+        let symbol_not_greater = Symbol::Not(Box::new(Symbol::Other(OtherSymbol::Greater)));
+        let token_stream: TS = quote! {#symbol_not_greater};
+        assert_eq!(token_stream.to_string(), "<=");
+    }
+
+    #[test]
+    fn test_to_tokens_condition() {
+        let condition_10_less_20 = Condition {
+            left: syn::parse_str("10").unwrap(),
+            symbol: Symbol::Other(OtherSymbol::Less),
+            right: syn::parse_str("20").unwrap(),
+        };
+        let token_stream: TS = quote! {#condition_10_less_20};
+        assert_eq!(token_stream.to_string(), "(10 < 20)");
+
+        let condition_30_greater_equal_40 = Condition {
+            left: syn::parse_str("30").unwrap(),
+            symbol: Symbol::EqualOr(OtherSymbol::Greater),
+            right: syn::parse_str("40").unwrap(),
+        };
+        let token_stream: TS = quote! {#condition_30_greater_equal_40};
+        assert_eq!(token_stream.to_string(), "(30 >= 40)");
+
+        let condition_50_equal_60 = Condition {
+            left: syn::parse_str("50").unwrap(),
+            symbol: Symbol::Equal,
+            right: syn::parse_str("60").unwrap(),
+        };
+        let token_stream: TS = quote! {#condition_50_equal_60};
+        assert_eq!(token_stream.to_string(), "(50 == 60)");
+
+        let condition_not_70_greater_80 = Condition {
+            left: syn::parse_str("70").unwrap(),
+            symbol: Symbol::Not(Box::new(Symbol::Other(OtherSymbol::Greater))),
+            right: syn::parse_str("80").unwrap(),
+        };
+        let token_stream: TS = quote! {#condition_not_70_greater_80};
+        assert_eq!(token_stream.to_string(), "(70 <= 80)");
     }
 }

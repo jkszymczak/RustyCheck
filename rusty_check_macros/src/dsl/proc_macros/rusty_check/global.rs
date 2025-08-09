@@ -76,17 +76,3 @@ impl Parse for Global {
         })
     }
 }
-
-// impl ToTokens for Global {
-//     fn to_tokens(&self, tokens: &mut TS) {
-//         let config = get_tokens_from_option(&self.config);
-//         let consts = get_tokens_from_option(&self.consts);
-//         let vars = get_tokens_from_option(&self.vars);
-//         dbg!(config);
-//         let code = quote! {
-//             #consts
-//             #vars
-//         };
-//         tokens.extend(code.into_iter());
-//     }
-// }
