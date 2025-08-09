@@ -16,13 +16,22 @@ pub struct Comment {
 impl ToTokens for Comment {
     fn to_tokens(&self, tokens: &mut TS) {
         let string = &self.string;
-        let where_str = self.values.iter().fold(" where, ".to_owned(), |acc, v| {
-            acc + &v.to_string() + "={:?}, "
-        });
+        let where_str = if self.values.is_empty() {
+            String::new()
+        } else {
+            format!(
+                " where, {}",
+                self.values
+                    .iter()
+                    .map(|v| format!("{}={{:?}}", v))
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            )
+        };
         let values = &self.values;
         let comment = string.to_owned() + where_str.as_str();
         tokens.extend(quote! {
-            #comment,#(#values),*
+            #comment #(, #values)*
         });
     }
 }

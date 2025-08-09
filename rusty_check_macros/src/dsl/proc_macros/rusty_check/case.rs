@@ -92,8 +92,60 @@ impl ToTokens for Case {
             fn #ident() {
                 #given
                 #compute
-                #check;
+                #check
             }
         });
+    }
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use proc_macro2::Span;
+    use quote::ToTokens;
+    use syn::{parse_quote, parse_str, Ident};
+
+    #[test]
+    fn test_parse_case() {
+        let input: proc_macro2::TokenStream = parse_quote! {
+            case my_test {
+                given {
+                    x = 10
+                }
+                do {
+                    let y = x + 5;
+                }
+                check { x equal y }
+            }
+        };
+
+        let parsed_case: Case = syn::parse2(input).unwrap();
+
+        assert_eq!(parsed_case.ident.to_string(), "my_test");
+        assert!(matches!(parsed_case.given, Some(_)));
+        assert!(matches!(parsed_case.compute, Some(_)));
+        assert!(matches!(parsed_case.check, Check { .. }));
+    }
+
+    #[test]
+    fn test_to_tokens_case() {
+        let mut tokens = proc_macro2::TokenStream::new();
+        let ident: Ident = parse_quote! { my_test_case };
+        let given = Some(parse_str("given {x = 20}").unwrap());
+        let check = parse_str("check { x equal 20 }").unwrap();
+        let case = Case {
+            kw: kw::case(Span::call_site()),
+            ident,
+            config: None,
+            given,
+            compute: None,
+            check,
+        };
+
+        case.to_tokens(&mut tokens);
+
+        assert_eq!(
+            tokens.to_string(),
+            parse_str::<TS>(r#"#[test] fn my_test_case() { let x = 20; assert!((x == 20),"x equal 20 where, x={:?}",x);}"#).unwrap().to_string()
+        );
     }
 }
