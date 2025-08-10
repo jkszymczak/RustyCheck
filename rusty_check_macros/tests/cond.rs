@@ -43,4 +43,34 @@ rusty_check! {
             for each n in part_slice, *n greater than 0 and for any n in full_slice, *n less than 100
         }
     }
+
+    mod enum_tests{
+    #[derive(Debug,PartialEq)]
+    pub enum MyEnum {
+        Value,
+        No,
+    }}
+    case test_enum {
+        given {
+            v = enum_tests::MyEnum::Value
+        }
+        check {
+            v equal enum_tests::MyEnum::Value
+        }
+    }
+    fn test_nothing(x:i32) -> i32{
+        println!("I runn");
+        x
+    }
+    case test_with_fun {
+        given {
+            v = 1
+        }
+        check {
+            v equal test_nothing(v)
+        }
+    }
+
+
+
 }

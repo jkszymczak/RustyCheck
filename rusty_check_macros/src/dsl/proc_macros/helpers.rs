@@ -48,16 +48,41 @@ pub fn get_tokens_from_option<K: ToTokens>(input: &Option<K>) -> TS {
 }
 
 struct IdentSeeker {
-    idents: Vec<Ident>,
+    idents: Vec<TS>,
 }
 
 impl<'ast> Visit<'ast> for IdentSeeker {
-    fn visit_ident(&mut self, i: &'ast Ident) {
-        self.idents.push(i.clone());
-        visit::visit_ident(self, i);
+    fn visit_pat(&mut self, pat: &'ast syn::Pat) {
+        if let syn::Pat::Ident(pat_ident) = pat {
+            // Add the pattern identifier to the idents list
+            self.idents.push(quote! { #pat });
+        }
+        visit::visit_pat(self, pat);
+    }
+    fn visit_expr_path(&mut self, path: &'ast syn::ExprPath) {
+        dbg!(path);
+        if let Some(ident) = path.path.get_ident() {
+            // We assume that simple identifiers are variable references
+            self.idents.push(path.to_token_stream());
+        }
+    }
+
+    fn visit_local(&mut self, local: &'ast syn::Local) {
+        let ident = &local.pat;
+        // Assuming locals are always variable references
+        self.idents.push(ident.to_token_stream());
+        visit::visit_local(self, local);
+    }
+    fn visit_expr_call(&mut self, call: &'ast syn::ExprCall) {
+        // dbg!(call);
+        self.idents.push(call.to_token_stream());
+        // visit::visit_expr_call(self, call);
+    }
+    fn visit_expr_method_call(&mut self, method: &'ast syn::ExprMethodCall) {
+        self.idents.push(method.to_token_stream());
     }
 }
-pub fn get_idents(expr: &TokenStream) -> Vec<Ident> {
+pub fn get_idents(expr: &TokenStream) -> Vec<TS> {
     let expr = parse2::<Expr>(expr.clone()).expect("Expected Expression");
     let mut visitor = IdentSeeker { idents: vec![] };
     visitor.visit_expr(&expr);

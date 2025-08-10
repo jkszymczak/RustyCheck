@@ -41,4 +41,52 @@ rusty_check! {
             a not greater than b
         }
     }
+
+    mod data_tests{
+    #[derive(Debug,PartialEq)]
+    pub enum MyEnum {
+        Value,
+        No,
+    }
+        #[derive(Debug)]
+        pub struct MyStruct {
+            pub val: i32
+        }
+
+        impl MyStruct {
+            pub fn add_five(&self) -> i32{
+                self.val + 5
+            }
+        }
+    }
+    case test_enum {
+        given {
+            v = data_tests::MyEnum::Value
+        }
+        check {
+            v equal data_tests::MyEnum::Value
+        }
+    }
+    fn test_nothing(x:i32) -> i32{
+        println!("I runn");
+        x
+    }
+    case test_with_fun {
+        given {
+            v = 1
+        }
+        check {
+            v equal test_nothing(v)
+        }
+    }
+
+    case test_method {
+        given {
+            v = data_tests::MyStruct { val: 10}
+        }
+        check {
+            v.add_five() equal v.val+5
+        }
+    }
+
 }
