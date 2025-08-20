@@ -1,6 +1,8 @@
 use crate::dsl::proc_macros::helpers::{Comment, ToComment};
 
-use super::{super::helpers::get_idents, expression::Expression, keywords as kw};
+use super::{
+    super::helpers::get_idents, configure::CommentType, expression::Expression, keywords as kw,
+};
 use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TS;
 use quote::{quote, ToTokens};
@@ -20,7 +22,7 @@ use syn::{
 /// represents grammar from this diagram:
 ///
 #[doc = include_str!("../../../../../grammar/case/check/condition.svg")]
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Symbol {
     Equal,
     EqualOr(OtherSymbol),
@@ -34,7 +36,7 @@ pub enum Symbol {
 /// - `Less`: Represents the `<` operator.
 /// - `Greater`: Represents the `>` operator.
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum OtherSymbol {
     Less,
     Greater,
@@ -47,7 +49,7 @@ pub enum OtherSymbol {
 /// - `symbol`: The operator, represented as a [`Symbol`].
 /// - `right`: The right-hand side expression.
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Condition {
     pub left: syn::Expr,
     pub symbol: Symbol,
@@ -221,7 +223,7 @@ impl ToComment for Condition {
     /// The `Comment` includes:
     /// - A string representation of the condition.
     /// - A list of identifiers used in the left-hand and right-hand expressions.
-    fn to_comment(&self) -> Comment {
+    fn to_comment(&self, comment_type: CommentType) -> Comment {
         let left = &self.left;
         let right = &self.right;
         let condition_string = self.to_string();

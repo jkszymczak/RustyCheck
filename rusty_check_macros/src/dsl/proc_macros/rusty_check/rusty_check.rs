@@ -1,4 +1,4 @@
-use super::{case::Case, global::Global, keywords as kw};
+use super::{case::Case, configure::Config, global::Global, keywords as kw};
 use proc_macro2::TokenStream as TS;
 use quote::{quote, ToTokens};
 use syn::{parse::Parse, Item};
@@ -17,6 +17,16 @@ pub struct RustyCheck {
     cases: Vec<Case>,
     /// Arbitrary Rust code items to be included in the generated test module.
     rust_code: Vec<Item>,
+}
+
+impl RustyCheck {
+    fn get_config(&self) -> Config {
+        self.globals
+            .as_ref()
+            .and_then(|g| g.config.as_ref())
+            .cloned()
+            .unwrap_or(Config::default())
+    }
 }
 
 impl Parse for RustyCheck {
@@ -79,19 +89,29 @@ impl ToTokens for RustyCheck {
     /// - Expands all global constants and variables
     /// - Expands all test `case` blocks
     fn to_tokens(&self, tokens: &mut TS) {
-        let (config, consts, vars) = match &self.globals {
+        let (cfg_flags, consts, vars) = match &self.globals {
             Some(Global {
                 config,
                 consts,
                 vars,
                 ..
-            }) => (config, consts, vars),
-            None => (&None, &None, &None),
+            }) => (
+                config.as_ref().and_then(|v| v.get_cfg_flags()),
+                consts,
+                vars,
+            ),
+            None => (None, &None, &None),
         };
-        let cases = &self.cases;
+        let config = self.get_config();
+        let cases: &Vec<Case> = &self
+            .cases
+            .clone()
+            .into_iter()
+            .map(|c| c.apply_global_config(&config))
+            .collect();
         let rust_code = &self.rust_code;
         tokens.extend(quote! {
-            #[cfg(all(test,#config))]
+            #[cfg(all(test,#cfg_flags))]
             mod tests {
                 #(#rust_code)*
                 #consts

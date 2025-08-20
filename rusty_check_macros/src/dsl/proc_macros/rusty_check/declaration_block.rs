@@ -19,6 +19,7 @@ use syn::{braced, parse::Parse, Token};
 /// Used for representing grammar from this diagram:
 ///
 #[doc = include_str!("../../../../../grammar/assignment.svg")]
+#[derive(Clone)]
 pub struct DeclarationBlock<K: Parse> {
     pub kw: K,
     assignments: Vec<Assignment<K>>,
@@ -32,6 +33,7 @@ pub struct DeclarationBlock<K: Parse> {
 /// # Fields
 /// - `kw`: A phantom type to associate the assignment with the keyword type `K`.
 /// - `data`: The token stream representing the assignment.
+#[derive(Clone)]
 pub struct Assignment<K: Parse> {
     kw: PhantomData<K>,
     data: TS,
