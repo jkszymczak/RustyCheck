@@ -88,5 +88,13 @@ rusty_check! {
             v.add_five() equal v.val+5
         }
     }
+    case test_unstable {
+        cfg {
+            unstable = true
+        }
+        check {
+            1 equal 2
+        }
+    }
 
 }

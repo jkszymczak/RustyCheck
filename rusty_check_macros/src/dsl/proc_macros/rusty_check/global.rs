@@ -47,7 +47,7 @@ impl Parse for Global {
             if content.peek(kw::cfg) {
                 let item = content.parse::<Config>()?;
                 if config.is_some() {
-                    return Err(syn::Error::new_spanned(item, "Duplicate `configure` block"));
+                    // return Err(syn::Error::new_spanned(item, "Duplicate `configure` block"));
                     todo!()
                 }
                 config = Some(item);

@@ -12,6 +12,7 @@ use syn::{braced, parse::Parse, Token};
 /// represents grammar from this diagram:
 ///
 #[doc = include_str!("../../../../../grammar/case/compute.svg")]
+#[derive(Clone)]
 pub struct Compute {
     keyword: Token![do],
     rust_code: TS,

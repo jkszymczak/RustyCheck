@@ -1,4 +1,9 @@
-use super::{super::helpers::ToComment, conditions::Conditions, keywords as kw};
+use super::{
+    super::helpers::ToComment,
+    conditions::Conditions,
+    configure::{CommentType, Config},
+    keywords as kw,
+};
 use proc_macro2::TokenStream as TS;
 use quote::{quote, ToTokens};
 use syn::{braced, parse::Parse};
@@ -13,10 +18,32 @@ use syn::{braced, parse::Parse};
 /// represents grammar from this diagram:
 ///
 #[doc = include_str!("../../../../../grammar/case/check/check.svg")]
+#[derive(Clone)]
 pub struct Check {
     keyword: kw::check,
     conditions: Conditions,
     comment: String,
+    comment_type: CommentType,
+    test_unstable: bool,
+}
+
+impl Check {
+    fn new(kw: kw::check, comment: String, conditions: Conditions) -> Check {
+        Check {
+            keyword: kw,
+            comment,
+            conditions,
+            comment_type: CommentType::default(),
+            test_unstable: false,
+        }
+    }
+    pub fn set_options(self, config: &Config) -> Check {
+        Check {
+            comment_type: config.get_comment_type().unwrap_or(self.comment_type),
+            test_unstable: config.get_unstabe_test().unwrap_or(self.test_unstable),
+            ..self
+        }
+    }
 }
 
 impl Parse for Check {
@@ -36,11 +63,7 @@ impl Parse for Check {
         braced!(conditions in input);
         let comment = conditions.to_string();
         let conditions = conditions.parse::<Conditions>()?;
-        Ok(Check {
-            keyword: kw,
-            comment,
-            conditions,
-        })
+        Ok(Check::new(kw, comment, conditions))
     }
 }
 
@@ -54,8 +77,17 @@ impl ToTokens for Check {
     /// - `tokens`: The token stream to append the generated code to.
     fn to_tokens(&self, tokens: &mut TS) {
         let conditions = &self.conditions;
-        let comment = &self.conditions.to_comment();
-        tokens.extend(quote! {assert!(#conditions,#comment);});
+        let comment = &self.conditions.to_comment(self.comment_type);
+        if self.test_unstable {
+            tokens.extend(quote! {
+                 if !#conditions {
+                     //TODO remember to add condition for unstable tests to run cargo test with -- --nocapture or --show-output
+                     eprintln!("Unstable test failed, {}",#comment);
+                 }
+            });
+        } else {
+            tokens.extend(quote! {assert!(#conditions,#comment);});
+        }
     }
 }
 

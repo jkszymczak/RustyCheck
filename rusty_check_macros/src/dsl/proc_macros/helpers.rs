@@ -8,6 +8,8 @@ use syn::{
     Expr,
 };
 
+use super::rusty_check::configure::CommentType;
+
 pub struct Comment {
     pub string: String,
     pub values: Vec<TS>,
@@ -37,7 +39,7 @@ impl ToTokens for Comment {
 }
 
 pub trait ToComment {
-    fn to_comment(&self) -> Comment;
+    fn to_comment(&self, comment_type: CommentType) -> Comment;
 }
 
 pub fn get_tokens_from_option<K: ToTokens>(input: &Option<K>) -> TS {
@@ -60,7 +62,7 @@ impl<'ast> Visit<'ast> for IdentSeeker {
         visit::visit_pat(self, pat);
     }
     fn visit_expr_path(&mut self, path: &'ast syn::ExprPath) {
-        dbg!(path);
+        // dbg!(path);
         if let Some(ident) = path.path.get_ident() {
             // We assume that simple identifiers are variable references
             self.idents.push(path.to_token_stream());

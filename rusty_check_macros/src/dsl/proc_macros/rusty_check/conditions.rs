@@ -1,4 +1,5 @@
 use super::super::helpers::{filter_out_streams_with_ident, Comment, ToComment};
+use super::configure::CommentType;
 use super::{condition::Condition, expression, keywords as kw};
 use proc_macro2::TokenStream as TS;
 use quote::{quote, ToTokens};
@@ -14,6 +15,7 @@ use syn::{parse::Parse, Token};
 /// represents grammar from this diagram:
 ///
 #[doc = include_str!("../../../../../grammar/case/check/conditions.svg")]
+#[derive(Clone)]
 pub enum Conditions {
     LoopCondition {
         /// The type of loop (e.g., `ForAny` or `ForEach`).
@@ -42,6 +44,7 @@ pub enum Conditions {
 /// Variants:
 /// - `ForAny`: A loop that checks if any element satisfies the condition.
 /// - `ForEach`: A loop that checks if all elements satisfy the condition.
+#[derive(Clone)]
 pub enum LoopType {
     ForAny,
     ForEach,
@@ -52,6 +55,7 @@ pub enum LoopType {
 /// Variants:
 /// - `Or`: Logical OR (`||`).
 /// - `And`: Logical AND (`&&`).
+#[derive(Clone)]
 pub enum JoinType {
     Or,
     And,
@@ -161,7 +165,7 @@ fn parse_loop_condition(input: syn::parse::ParseStream) -> syn::Result<Condition
     } else if is_in_any(&input) {
         parse_for_loop(&input, LoopType::ForAny)
     } else {
-        todo!()
+        Err(input.error("Unknown loop condition"))
     }
 }
 
@@ -263,41 +267,48 @@ impl ToComment for Conditions {
     /// Converts a `Conditions` instance into a `Comment` object.
     ///
     /// The `Comment` includes a string representation of the condition and its associated values.
-    fn to_comment(&self) -> Comment {
-        match &self {
-            Conditions::LoopCondition {
-                loop_type: _,
-                collection,
-                element,
-                condition,
-            } => {
-                let cond_comment = condition.to_comment();
-                let comment = self.to_string();
-                let filtered_values = filter_out_streams_with_ident(&cond_comment.values, element)
-                    .into_iter()
-                    .map(|v| v.clone())
-                    .collect();
-                Comment {
-                    string: comment,
-                    values: vec![vec![collection.to_token_stream()], filtered_values].concat(),
+    fn to_comment(&self, comment_type: CommentType) -> Comment {
+        match comment_type {
+            CommentType::Simple => Comment {
+                string: self.to_string(),
+                values: vec![],
+            },
+            CommentType::ShowValues => match &self {
+                Conditions::LoopCondition {
+                    loop_type: _,
+                    collection,
+                    element,
+                    condition,
+                } => {
+                    let cond_comment = condition.to_comment(comment_type);
+                    let comment = self.to_string();
+                    let filtered_values =
+                        filter_out_streams_with_ident(&cond_comment.values, element)
+                            .into_iter()
+                            .map(|v| v.clone())
+                            .collect();
+                    Comment {
+                        string: comment,
+                        values: vec![vec![collection.to_token_stream()], filtered_values].concat(),
+                    }
                 }
-            }
-            Conditions::CompoundCondition {
-                left_condition,
-                join: _,
-                right_condition,
-            } => {
-                let left_comment = left_condition.to_comment();
-                let right_comment = right_condition.to_comment();
-                let comment = self.to_string();
-                let left_value = left_comment.values;
-                let right_value = right_comment.values;
-                Comment {
-                    string: comment,
-                    values: vec![left_value, right_value].concat(),
+                Conditions::CompoundCondition {
+                    left_condition,
+                    join: _,
+                    right_condition,
+                } => {
+                    let left_comment = left_condition.to_comment(comment_type);
+                    let right_comment = right_condition.to_comment(comment_type);
+                    let comment = self.to_string();
+                    let left_value = left_comment.values;
+                    let right_value = right_comment.values;
+                    Comment {
+                        string: comment,
+                        values: vec![left_value, right_value].concat(),
+                    }
                 }
-            }
-            Conditions::Condition(condition) => condition.to_comment(),
+                Conditions::Condition(condition) => condition.to_comment(comment_type),
+            },
         }
     }
 }

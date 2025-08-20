@@ -20,6 +20,15 @@ syn::custom_keyword!(any);
 syn::custom_keyword!(rust);
 
 syn::custom_keyword!(global);
+//cfg
 syn::custom_keyword!(cfg);
+
+syn::custom_keyword!(comment);
+syn::custom_keyword!(simple);
+syn::custom_keyword!(show);
+syn::custom_keyword!(values);
+
+syn::custom_keyword!(unstable);
+//cfg
 syn::custom_keyword!(consts);
 syn::custom_keyword!(vars);

@@ -3,7 +3,10 @@ use quote::{quote, ToTokens};
 use syn::{braced, parse::Parse, Token};
 
 use super::{
-    check::Check, compute::Compute, configure::Config, declaration_block::DeclarationBlock,
+    check::Check,
+    compute::Compute,
+    configure::{Config, ConfigOption, ConfigOptionName},
+    declaration_block::DeclarationBlock,
     keywords as kw,
 };
 
@@ -22,16 +25,24 @@ type Given = DeclarationBlock<kw::given>;
 /// represents grammar from this diagram:
 ///
 #[doc = include_str!("../../../../../grammar/case/case.svg")]
-
+#[derive(Clone)]
 pub struct Case {
     kw: kw::case,
     ident: syn::Ident,
-    config: Option<Config>,
+    config: Config,
     given: Option<Given>,
     compute: Option<Compute>,
     check: Check,
 }
 
+impl Case {
+    pub fn apply_global_config(self, global_cfg: &Config) -> Case {
+        Case {
+            config: self.config.merge_with_global(global_cfg),
+            ..self
+        }
+    }
+}
 /// Implementation of the `Parse` trait for the `Case` struct.
 ///
 /// This implementation allows parsing a `Case` from a token stream in the RustyCheck DSL.
@@ -44,9 +55,9 @@ impl Parse for Case {
         let case;
         braced!(case in input);
         let config = if case.peek(kw::cfg) {
-            Some(case.parse::<Config>()?)
+            case.parse::<Config>()?
         } else {
-            None
+            Config::default()
         };
         let given = if case.peek(kw::given) {
             Some(case.parse::<Given>()?)
@@ -80,14 +91,10 @@ impl ToTokens for Case {
         let ident = &self.ident;
         let given = &self.given;
         let compute = &self.compute;
-        let config = &self.config.as_ref().map(|c| {
-            quote! {
-                #[cfg(#c)]
-            }
-        });
-        let check = &self.check;
+        let cfg_flags: Option<TS> = self.config.get_cfg_flags();
+        let check = self.check.to_owned().set_options(&self.config);
         tokens.extend(quote! {
-            #config
+            #cfg_flags
             #[test]
             fn #ident() {
                 #given
@@ -135,7 +142,7 @@ mod tests {
         let case = Case {
             kw: kw::case(Span::call_site()),
             ident,
-            config: None,
+            config: Config::default(),
             given,
             compute: None,
             check,
