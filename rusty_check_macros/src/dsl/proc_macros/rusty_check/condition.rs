@@ -1,15 +1,9 @@
 use crate::dsl::proc_macros::helpers::{Comment, ToComment};
 
-use super::{
-    super::helpers::get_idents, configure::CommentType, expression::Expression, keywords as kw,
-};
-use proc_macro::TokenStream;
+use super::{super::helpers::get_idents, configure::CommentType, keywords as kw};
 use proc_macro2::TokenStream as TS;
 use quote::{quote, ToTokens};
-use syn::{
-    parse::{self, Parse},
-    parse_macro_input, Expr,
-};
+use syn::parse::Parse;
 
 /// Represents a logical or comparison operator in a condition.
 ///

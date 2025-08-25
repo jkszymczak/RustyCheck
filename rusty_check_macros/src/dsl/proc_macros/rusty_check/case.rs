@@ -3,10 +3,7 @@ use quote::{quote, ToTokens};
 use syn::{braced, parse::Parse, Token};
 
 use super::{
-    check::Check,
-    compute::Compute,
-    configure::{Config, ConfigOption, ConfigOptionName},
-    declaration_block::DeclarationBlock,
+    check::Check, compute::Compute, configure::Config, declaration_block::DeclarationBlock,
     keywords as kw,
 };
 
@@ -38,7 +35,7 @@ pub struct Case {
 impl Case {
     pub fn apply_global_config(self, global_cfg: &Config) -> Case {
         Case {
-            config: self.config.merge_with_global(global_cfg),
+            config: self.config.merge_with_other_and_default(global_cfg),
             ..self
         }
     }

@@ -1,6 +1,10 @@
 use rusty_check_macros::rusty_check;
 rusty_check! {
     global {
+        cfg {
+            comment = simple,
+            create module = false
+        }
         vars {
             SOME_VAL: u32 = 21
         }

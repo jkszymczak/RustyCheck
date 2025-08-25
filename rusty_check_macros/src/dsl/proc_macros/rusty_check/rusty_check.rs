@@ -1,7 +1,7 @@
 use super::{case::Case, configure::Config, global::Global, keywords as kw};
 use proc_macro2::TokenStream as TS;
 use quote::{quote, ToTokens};
-use syn::{parse::Parse, Item};
+use syn::{parse::Parse, Item, Token};
 
 /// Represents a full `rusty_check!` macro input, consisting of:
 ///
@@ -39,6 +39,9 @@ impl Parse for RustyCheck {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         let mut cases = Vec::new();
         let mut rust_code = Vec::new();
+        while !input.is_empty() && input.peek(Token![use]) {
+            rust_code.push(input.parse::<Item>()?);
+        }
         let globals = if input.peek(kw::global) {
             Some(input.parse::<Global>()?)
         } else {
@@ -102,7 +105,7 @@ impl ToTokens for RustyCheck {
             ),
             None => (None, &None, &None),
         };
-        let config = self.get_config();
+        let config = self.get_config().merge_with_default();
         let cases: &Vec<Case> = &self
             .cases
             .clone()
@@ -110,14 +113,23 @@ impl ToTokens for RustyCheck {
             .map(|c| c.apply_global_config(&config))
             .collect();
         let rust_code = &self.rust_code;
-        tokens.extend(quote! {
-            #[cfg(all(test,#cfg_flags))]
-            mod tests {
-                #(#rust_code)*
-                #consts
-                #vars
-                #(#cases)*
-            }
+        let module_name = config.get_module_name();
+        let create_module = config.get_create_module();
+        let body = quote! {
+            #(#rust_code)*
+            #consts
+            #vars
+            #(#cases)*
+        };
+
+        tokens.extend(match create_module {
+            Some(false) => body,
+            _ => quote! {
+                #[cfg(all(test, #cfg_flags))]
+                mod #module_name {
+                    #body
+                }
+            },
         });
     }
 }
