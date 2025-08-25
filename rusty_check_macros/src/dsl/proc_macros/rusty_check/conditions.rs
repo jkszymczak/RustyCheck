@@ -1,6 +1,6 @@
 use super::super::helpers::{filter_out_streams_with_ident, Comment, ToComment};
 use super::configure::CommentType;
-use super::{condition::Condition, expression, keywords as kw};
+use super::{condition::Condition, keywords as kw};
 use proc_macro2::TokenStream as TS;
 use quote::{quote, ToTokens};
 use syn::{parse::Parse, Token};

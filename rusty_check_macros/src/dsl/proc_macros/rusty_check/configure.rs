@@ -1,9 +1,8 @@
-use std::collections::{BTreeMap, HashMap};
+use std::collections::HashMap;
 
 use super::keywords as kw;
 use proc_macro2::{TokenStream as TS, TokenTree};
-use quote::{quote, ToTokens};
-use syn::{braced, parse::Parse, punctuated, token::Brace, Ident, Token};
+use syn::{braced, parse::Parse, token::Brace, Ident, Token};
 
 /// Represents a configuration block in the RustyCheck DSL.
 ///
@@ -15,58 +14,73 @@ use syn::{braced, parse::Parse, punctuated, token::Brace, Ident, Token};
 /// represents grammar from this diagram:
 ///
 #[doc = include_str!("../../../../../grammar/global/cfg.svg")]
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Config {
     keyword: kw::cfg,
     pub options: HashMap<ConfigOptionName, ConfigOption>,
 }
 
 macro_rules! create_cfg_getters {
-    ($name:ident,$option:ident,$t:ty) => {
+    ($name:ident,$option:ident,$field:ident,$t:ty) => {
         pub fn $name(&self) -> Option<$t> {
             self.options
                 .get(&ConfigOptionName::$option)
                 .map(|v| match v {
-                    ConfigOption::$option(val) => val.clone(),
+                    ConfigOption::$option { $field, .. } => $field.clone(),
                     _ => panic!(),
                 })
         }
     };
 }
 impl Config {
-    create_cfg_getters!(get_cfg_flags, CfgFlags, TS);
-    create_cfg_getters!(get_comment_type, CommentType, CommentType);
-    create_cfg_getters!(get_unstabe_test, TestUnstable, bool);
+    create_cfg_getters!(get_cfg_flags, CfgFlags, flags, TS);
+    create_cfg_getters!(get_comment_type, CommentType, comment_type, CommentType);
+    create_cfg_getters!(get_unstabe_test, TestUnstable, value, bool);
+    create_cfg_getters!(get_module_name, ModuleName, name, Ident);
+    create_cfg_getters!(get_create_module, CreateModule, value, bool);
 
-    pub fn merge_with_global(self, other: &Config) -> Config {
+    pub fn merge_with_other(self, other: &Config) -> Config {
         let mut combined = self.options.clone();
-        if let Some(comment_type) = other.get_comment_type() {
-            combined
-                .entry(ConfigOptionName::CommentType)
-                .or_insert(ConfigOption::CommentType(comment_type));
+        for (k, v) in other.options.iter() {
+            combined.entry(k.clone()).or_insert(v.clone());
         }
-        if let Some(test_unstable) = other.get_unstabe_test() {
-            combined
-                .entry(ConfigOptionName::TestUnstable)
-                .or_insert(ConfigOption::TestUnstable(test_unstable));
-        }
-        Config {
+        Self {
             options: combined,
             ..self
         }
     }
+    pub fn merge_with_default(self) -> Self {
+        let default = Self::default();
+        self.merge_with_other(&default)
+    }
+    pub fn merge_with_other_and_default(self, other: &Config) -> Config {
+        let with_other = self.merge_with_other(other);
+        with_other.merge_with_default()
+    }
     pub fn default() -> Config {
         Config {
             keyword: kw::cfg(proc_macro2::Span::call_site()),
-            options: HashMap::from([(
-                ConfigOptionName::CommentType,
-                ConfigOption::CommentType(CommentType::default()),
-            )]),
+            options: HashMap::from([
+                (
+                    ConfigOptionName::CommentType,
+                    ConfigOption::CommentType {
+                        kw: kw::comment(proc_macro2::Span::call_site()),
+                        comment_type: CommentType::default(),
+                    },
+                ),
+                (
+                    ConfigOptionName::ModuleName,
+                    ConfigOption::ModuleName {
+                        kw: kw::name(proc_macro2::Span::call_site()),
+                        name: Ident::new("tests", proc_macro2::Span::call_site()),
+                    },
+                ),
+            ]),
         }
     }
 }
 
-#[derive(Clone, Hash, PartialEq, Copy)]
+#[derive(Debug, Clone, Hash, PartialEq, Copy)]
 pub enum CommentType {
     Simple,
     ShowValues,
@@ -74,12 +88,6 @@ pub enum CommentType {
 
 impl Default for CommentType {
     fn default() -> Self {
-        CommentType::ShowValues
-    }
-}
-
-impl CommentType {
-    fn new_default() -> CommentType {
         CommentType::ShowValues
     }
 }
@@ -93,7 +101,7 @@ macro_rules! enum_with_names {
             ),* $(,)?
         }, $EnumWithNames:ident
     ) => {
-        #[derive(Clone)]
+        #[derive(Clone,Debug)]
         pub enum $EnumName {
             $(
                 $Variant $( ( $($Field),* ) )?
@@ -111,9 +119,26 @@ macro_rules! enum_with_names {
 }
 enum_with_names!(
     enum ConfigOption {
-        CfgFlags(TS),
-        CommentType(CommentType),
-        TestUnstable(bool),
+        CfgFlags {
+            kw: kw::cfg,
+            flags: TS,
+        },
+        CommentType {
+            kw: kw::comment,
+            comment_type: CommentType,
+        },
+        TestUnstable {
+            kw: kw::unstable,
+            value: bool,
+        },
+        ModuleName {
+            kw: kw::name,
+            name: Ident,
+        },
+        CreateModule {
+            kw: kw::module,
+            value: bool,
+        },
     },
     ConfigOptionName
 );
@@ -121,22 +146,30 @@ enum_with_names!(
 impl Parse for ConfigOption {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         if input.peek(kw::cfg) {
-            let kw = input.parse::<kw::cfg>()?;
-
-            _ = input.parse::<Token![=]>()?;
             return parse_cfg_option(input);
         }
         if input.peek(kw::comment) {
-            let kw = input.parse::<kw::comment>()?;
-
-            _ = input.parse::<Token![=]>()?;
             return parse_comment_option(input);
         }
         if input.peek(kw::unstable) {
             let kw = input.parse::<kw::unstable>()?;
             _ = input.parse::<Token![=]>()?;
             let val = input.parse::<syn::LitBool>()?.value;
-            return Ok(ConfigOption::TestUnstable(val));
+            return Ok(ConfigOption::TestUnstable { kw: kw, value: val });
+        }
+        if input.peek(kw::module) {
+            _ = input.parse::<kw::module>()?;
+            let kw = input.parse::<kw::name>()?;
+            _ = input.parse::<Token![=]>()?;
+            let name = input.parse::<Ident>()?;
+            return Ok(ConfigOption::ModuleName { kw: kw, name: name });
+        }
+        if input.peek(kw::create) {
+            _ = input.parse::<kw::create>()?;
+            let kw = input.parse::<kw::module>()?;
+            _ = input.parse::<Token![=]>()?;
+            let val = input.parse::<syn::LitBool>()?.value;
+            return Ok(ConfigOption::CreateModule { kw: kw, value: val });
         }
 
         Err(input.error("Unknown configuration option"))
@@ -144,19 +177,30 @@ impl Parse for ConfigOption {
 }
 
 fn parse_comment_option(input: syn::parse::ParseStream) -> syn::Result<ConfigOption> {
+    let kw = input.parse::<kw::comment>()?;
+    _ = input.parse::<Token![=]>()?;
     if input.peek(kw::simple) {
         _ = input.parse::<kw::simple>()?;
-        return Ok(ConfigOption::CommentType(CommentType::Simple));
+        return Ok(ConfigOption::CommentType {
+            kw: kw,
+            comment_type: CommentType::Simple,
+        });
     }
     if input.peek(kw::show) {
         _ = input.parse::<kw::show>()?;
         _ = input.parse::<kw::values>()?;
-        return Ok(ConfigOption::CommentType(CommentType::ShowValues));
+        return Ok(ConfigOption::CommentType {
+            kw: kw,
+            comment_type: CommentType::ShowValues,
+        });
     }
     Err(input.error("Unknown value for comment type"))
 }
 
 fn parse_cfg_option(input: syn::parse::ParseStream) -> syn::Result<ConfigOption> {
+    let kw = input.parse::<kw::cfg>()?;
+
+    _ = input.parse::<Token![=]>()?;
     let mut value_tokens = TS::new();
     while !input.is_empty() {
         let fork = input.fork();
@@ -166,7 +210,10 @@ fn parse_cfg_option(input: syn::parse::ParseStream) -> syn::Result<ConfigOption>
         let tt: TokenTree = input.parse()?; // consume one token
         value_tokens.extend(std::iter::once(tt));
     }
-    Ok(ConfigOption::CfgFlags(value_tokens))
+    Ok(ConfigOption::CfgFlags {
+        kw: kw,
+        flags: value_tokens,
+    })
 }
 
 impl Parse for Config {
@@ -196,9 +243,11 @@ impl Parse for Config {
             let map = options
                 .into_iter()
                 .map(|opt| match opt {
-                    ConfigOption::CfgFlags(_) => (ConfigOptionName::CfgFlags, opt),
-                    ConfigOption::CommentType(_) => (ConfigOptionName::CommentType, opt),
-                    ConfigOption::TestUnstable(_) => (ConfigOptionName::TestUnstable, opt),
+                    ConfigOption::CfgFlags { .. } => (ConfigOptionName::CfgFlags, opt),
+                    ConfigOption::CommentType { .. } => (ConfigOptionName::CommentType, opt),
+                    ConfigOption::TestUnstable { .. } => (ConfigOptionName::TestUnstable, opt),
+                    ConfigOption::ModuleName { .. } => (ConfigOptionName::ModuleName, opt),
+                    ConfigOption::CreateModule { .. } => (ConfigOptionName::CreateModule, opt),
                 })
                 .collect();
             Ok(Config {

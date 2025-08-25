@@ -29,6 +29,10 @@ syn::custom_keyword!(show);
 syn::custom_keyword!(values);
 
 syn::custom_keyword!(unstable);
+
+syn::custom_keyword!(module);
+syn::custom_keyword!(name);
+syn::custom_keyword!(create);
 //cfg
 syn::custom_keyword!(consts);
 syn::custom_keyword!(vars);
