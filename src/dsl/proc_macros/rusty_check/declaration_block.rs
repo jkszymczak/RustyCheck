@@ -1,11 +1,11 @@
 use std::marker::PhantomData;
 
-use super::{expression::Expression, keywords as kw};
+use super::keywords as kw;
 use proc_macro2::TokenStream as TS;
 
 use quote::{quote, ToTokens};
 
-use syn::{braced, parse::Parse, Token};
+use syn::{braced, parse::Parse, Expr, Token};
 
 /// Represents a block of declarations, parameterized by a keyword type `K`.
 ///
@@ -18,7 +18,6 @@ use syn::{braced, parse::Parse, Token};
 ///
 /// Used for representing grammar from this diagram:
 ///
-#[doc = include_str!("../../../../../grammar/assignment.svg")]
 #[derive(Clone)]
 pub struct DeclarationBlock<K: Parse> {
     pub kw: K,
@@ -60,7 +59,7 @@ fn parse_assignment<K: Parse>(
         input.parse::<syn::Ident>()?.to_token_stream()
     };
     input.parse::<Token![=]>()?;
-    let exp = input.parse::<Expression>()?;
+    let exp = input.parse::<Expr>()?;
     let code: TS = quote! {
         #assignment_kw #ident = #exp;
     }

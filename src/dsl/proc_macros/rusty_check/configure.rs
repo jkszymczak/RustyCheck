@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use super::keywords as kw;
+use proc_macro::TokenStream;
 use proc_macro2::{TokenStream as TS, TokenTree};
 use syn::{braced, parse::Parse, token::Brace, Ident, Token};
 
@@ -13,7 +14,6 @@ use syn::{braced, parse::Parse, token::Brace, Ident, Token};
 ///
 /// represents grammar from this diagram:
 ///
-#[doc = include_str!("../../../../../grammar/global/cfg.svg")]
 #[derive(Clone, Debug)]
 pub struct Config {
     keyword: kw::cfg,
@@ -22,20 +22,33 @@ pub struct Config {
 
 macro_rules! create_cfg_getters {
     ($name:ident,$option:ident,$field:ident,$t:ty) => {
-        pub fn $name(&self) -> Option<$t> {
-            self.options
+        pub fn $name(&self) -> $t {
+            if let Some(value) = self
+                .options
                 .get(&ConfigOptionName::$option)
                 .map(|v| match v {
                     ConfigOption::$option { $field, .. } => $field.clone(),
                     _ => panic!(),
                 })
+            {
+                value
+            } else {
+                Self::default()
+                    .options
+                    .get(&ConfigOptionName::$option)
+                    .map(|v| match v {
+                        ConfigOption::$option { $field, .. } => $field.clone(),
+                        _ => panic!(),
+                    })
+                    .unwrap()
+            }
         }
     };
 }
 impl Config {
     create_cfg_getters!(get_cfg_flags, CfgFlags, flags, TS);
     create_cfg_getters!(get_comment_type, CommentType, comment_type, CommentType);
-    create_cfg_getters!(get_unstabe_test, TestUnstable, value, bool);
+    create_cfg_getters!(get_unstable_test, TestUnstable, value, bool);
     create_cfg_getters!(get_module_name, ModuleName, name, Ident);
     create_cfg_getters!(get_create_module, CreateModule, value, bool);
 
@@ -57,22 +70,50 @@ impl Config {
         let with_other = self.merge_with_other(other);
         with_other.merge_with_default()
     }
-    pub fn default() -> Config {
+}
+macro_rules! with_call_site {
+    ($kw: path) => {
+        $kw(proc_macro2::Span::call_site())
+    };
+}
+impl Default for Config {
+    fn default() -> Self {
         Config {
             keyword: kw::cfg(proc_macro2::Span::call_site()),
             options: HashMap::from([
                 (
                     ConfigOptionName::CommentType,
                     ConfigOption::CommentType {
-                        kw: kw::comment(proc_macro2::Span::call_site()),
+                        kw: with_call_site!(kw::comment),
                         comment_type: CommentType::default(),
                     },
                 ),
                 (
                     ConfigOptionName::ModuleName,
                     ConfigOption::ModuleName {
-                        kw: kw::name(proc_macro2::Span::call_site()),
+                        kw: with_call_site!(kw::name),
                         name: Ident::new("tests", proc_macro2::Span::call_site()),
+                    },
+                ),
+                (
+                    ConfigOptionName::CfgFlags,
+                    ConfigOption::CfgFlags {
+                        kw: with_call_site!(kw::cfg),
+                        flags: TS::new(),
+                    },
+                ),
+                (
+                    ConfigOptionName::TestUnstable,
+                    ConfigOption::TestUnstable {
+                        kw: with_call_site!(kw::unstable),
+                        value: false,
+                    },
+                ),
+                (
+                    ConfigOptionName::CreateModule,
+                    ConfigOption::CreateModule {
+                        kw: with_call_site!(kw::module),
+                        value: false,
                     },
                 ),
             ]),

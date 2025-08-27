@@ -23,8 +23,7 @@ impl RustyCheck {
     fn get_config(&self) -> Config {
         self.globals
             .as_ref()
-            .and_then(|g| g.config.as_ref())
-            .cloned()
+            .map(|g| g.config.clone())
             .unwrap_or(Config::default())
     }
 }
@@ -98,12 +97,8 @@ impl ToTokens for RustyCheck {
                 consts,
                 vars,
                 ..
-            }) => (
-                config.as_ref().and_then(|v| v.get_cfg_flags()),
-                consts,
-                vars,
-            ),
-            None => (None, &None, &None),
+            }) => (config.get_cfg_flags(), consts, vars),
+            None => (TS::new(), &None, &None),
         };
         let config = self.get_config().merge_with_default();
         let cases: &Vec<Case> = &self
@@ -123,8 +118,8 @@ impl ToTokens for RustyCheck {
         };
 
         tokens.extend(match create_module {
-            Some(false) => body,
-            _ => quote! {
+            false => body,
+            true => quote! {
                 #[cfg(all(test, #cfg_flags))]
                 mod #module_name {
                     #body

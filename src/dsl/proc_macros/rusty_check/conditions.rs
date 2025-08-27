@@ -14,7 +14,6 @@ use syn::{parse::Parse, Token};
 ///
 /// represents grammar from this diagram:
 ///
-#[doc = include_str!("../../../../../grammar/case/check/conditions.svg")]
 #[derive(Clone)]
 pub enum Conditions {
     LoopCondition {

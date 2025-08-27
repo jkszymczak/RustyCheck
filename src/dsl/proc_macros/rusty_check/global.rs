@@ -15,10 +15,9 @@ type Vars = DeclarationBlock<kw::vars>;
 ///
 /// represents grammar from this diagram:
 ///
-#[doc = include_str!("../../../../../grammar/global/global.svg")]
 pub struct Global {
     kw: kw::global,
-    pub config: Option<Config>,
+    pub config: Config,
     pub consts: Option<Consts>,
     pub vars: Option<Vars>,
 }
@@ -67,10 +66,9 @@ impl Parse for Global {
                 return Err(content.error("Expected `configure`, `constants`, or `vars` block"));
             }
         }
-
         Ok(Global {
             kw,
-            config,
+            config: config.unwrap_or(Config::default()),
             consts,
             vars,
         })

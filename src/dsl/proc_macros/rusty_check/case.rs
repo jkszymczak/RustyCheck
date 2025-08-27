@@ -21,7 +21,6 @@ type Given = DeclarationBlock<kw::given>;
 ///
 /// represents grammar from this diagram:
 ///
-#[doc = include_str!("../../../../../grammar/case/case.svg")]
 #[derive(Clone)]
 pub struct Case {
     kw: kw::case,
@@ -88,7 +87,7 @@ impl ToTokens for Case {
         let ident = &self.ident;
         let given = &self.given;
         let compute = &self.compute;
-        let cfg_flags: Option<TS> = self.config.get_cfg_flags();
+        let cfg_flags: TS = self.config.get_cfg_flags();
         let check = self.check.to_owned().set_options(&self.config);
         tokens.extend(quote! {
             #cfg_flags
