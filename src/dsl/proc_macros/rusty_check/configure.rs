@@ -113,7 +113,7 @@ impl Default for Config {
                     ConfigOptionName::CreateModule,
                     ConfigOption::CreateModule {
                         kw: with_call_site!(kw::module),
-                        value: false,
+                        value: true,
                     },
                 ),
             ]),
@@ -276,7 +276,8 @@ impl Parse for Config {
             Ok(Config {
                 keyword: kw,
                 options: HashMap::from([(ConfigOptionName::CfgFlags, cfg_option)]),
-            })
+            }
+            .merge_with_default())
         } else {
             let cfg;
             braced!(cfg in input);
@@ -294,7 +295,8 @@ impl Parse for Config {
             Ok(Config {
                 keyword: kw,
                 options: map,
-            })
+            }
+            .merge_with_default())
         }
     }
 }
