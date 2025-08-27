@@ -1,4 +1,4 @@
-use rusty_check_macros::rusty_check;
+use rusty_check::rusty_check;
 rusty_check! {
     case loop_cond_on_vec {
         given {

@@ -17,7 +17,6 @@ use syn::{braced, parse::Parse};
 ///
 /// represents grammar from this diagram:
 ///
-#[doc = include_str!("../../../../../grammar/case/check/check.svg")]
 #[derive(Clone)]
 pub struct Check {
     keyword: kw::check,
@@ -39,8 +38,8 @@ impl Check {
     }
     pub fn set_options(self, config: &Config) -> Check {
         Check {
-            comment_type: config.get_comment_type().unwrap_or(self.comment_type),
-            test_unstable: config.get_unstabe_test().unwrap_or(self.test_unstable),
+            comment_type: config.get_comment_type(),
+            test_unstable: config.get_unstable_test(),
             ..self
         }
     }

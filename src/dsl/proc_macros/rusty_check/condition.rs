@@ -15,7 +15,6 @@ use syn::parse::Parse;
 ///
 /// represents grammar from this diagram:
 ///
-#[doc = include_str!("../../../../../grammar/case/check/condition.svg")]
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Symbol {
     Equal,
