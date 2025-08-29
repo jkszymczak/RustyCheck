@@ -16,7 +16,6 @@ type Vars = DeclarationBlock<kw::vars>;
 /// represents grammar from this diagram:
 ///
 pub struct Global {
-    kw: kw::global,
     pub config: Config,
     pub consts: Option<Consts>,
     pub vars: Option<Vars>,
@@ -34,7 +33,7 @@ impl Parse for Global {
     /// # Errors
     /// Returns a `syn::Error` if the input cannot be parsed as a valid `Global` block or if duplicate blocks are found.
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        let kw = input.parse::<kw::global>()?;
+        _ = input.parse::<kw::global>()?;
         let content;
         braced!(content in input);
 
@@ -67,7 +66,6 @@ impl Parse for Global {
             }
         }
         Ok(Global {
-            kw,
             config: config.unwrap_or(Config::default()),
             consts,
             vars,

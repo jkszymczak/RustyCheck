@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 
 use super::keywords as kw;
-use proc_macro::TokenStream;
 use proc_macro2::{TokenStream as TS, TokenTree};
 use syn::{braced, parse::Parse, token::Brace, Ident, Token};
 
@@ -16,7 +15,6 @@ use syn::{braced, parse::Parse, token::Brace, Ident, Token};
 ///
 #[derive(Clone, Debug)]
 pub struct Config {
-    keyword: kw::cfg,
     pub options: HashMap<ConfigOptionName, ConfigOption>,
 }
 
@@ -71,50 +69,33 @@ impl Config {
         with_other.merge_with_default()
     }
 }
-macro_rules! with_call_site {
-    ($kw: path) => {
-        $kw(proc_macro2::Span::call_site())
-    };
-}
 impl Default for Config {
     fn default() -> Self {
         Config {
-            keyword: kw::cfg(proc_macro2::Span::call_site()),
             options: HashMap::from([
                 (
                     ConfigOptionName::CommentType,
                     ConfigOption::CommentType {
-                        kw: with_call_site!(kw::comment),
                         comment_type: CommentType::default(),
                     },
                 ),
                 (
                     ConfigOptionName::ModuleName,
                     ConfigOption::ModuleName {
-                        kw: with_call_site!(kw::name),
                         name: Ident::new("tests", proc_macro2::Span::call_site()),
                     },
                 ),
                 (
                     ConfigOptionName::CfgFlags,
-                    ConfigOption::CfgFlags {
-                        kw: with_call_site!(kw::cfg),
-                        flags: TS::new(),
-                    },
+                    ConfigOption::CfgFlags { flags: TS::new() },
                 ),
                 (
                     ConfigOptionName::TestUnstable,
-                    ConfigOption::TestUnstable {
-                        kw: with_call_site!(kw::unstable),
-                        value: false,
-                    },
+                    ConfigOption::TestUnstable { value: false },
                 ),
                 (
                     ConfigOptionName::CreateModule,
-                    ConfigOption::CreateModule {
-                        kw: with_call_site!(kw::module),
-                        value: true,
-                    },
+                    ConfigOption::CreateModule { value: true },
                 ),
             ]),
         }
@@ -160,26 +141,11 @@ macro_rules! enum_with_names {
 }
 enum_with_names!(
     enum ConfigOption {
-        CfgFlags {
-            kw: kw::cfg,
-            flags: TS,
-        },
-        CommentType {
-            kw: kw::comment,
-            comment_type: CommentType,
-        },
-        TestUnstable {
-            kw: kw::unstable,
-            value: bool,
-        },
-        ModuleName {
-            kw: kw::name,
-            name: Ident,
-        },
-        CreateModule {
-            kw: kw::module,
-            value: bool,
-        },
+        CfgFlags { flags: TS },
+        CommentType { comment_type: CommentType },
+        TestUnstable { value: bool },
+        ModuleName { name: Ident },
+        CreateModule { value: bool },
     },
     ConfigOptionName
 );
@@ -193,24 +159,24 @@ impl Parse for ConfigOption {
             return parse_comment_option(input);
         }
         if input.peek(kw::unstable) {
-            let kw = input.parse::<kw::unstable>()?;
+            _ = input.parse::<kw::unstable>()?;
             _ = input.parse::<Token![=]>()?;
             let val = input.parse::<syn::LitBool>()?.value;
-            return Ok(ConfigOption::TestUnstable { kw: kw, value: val });
+            return Ok(ConfigOption::TestUnstable { value: val });
         }
         if input.peek(kw::module) {
             _ = input.parse::<kw::module>()?;
-            let kw = input.parse::<kw::name>()?;
+            _ = input.parse::<kw::name>()?;
             _ = input.parse::<Token![=]>()?;
             let name = input.parse::<Ident>()?;
-            return Ok(ConfigOption::ModuleName { kw: kw, name: name });
+            return Ok(ConfigOption::ModuleName { name: name });
         }
         if input.peek(kw::create) {
             _ = input.parse::<kw::create>()?;
-            let kw = input.parse::<kw::module>()?;
+            _ = input.parse::<kw::module>()?;
             _ = input.parse::<Token![=]>()?;
             let val = input.parse::<syn::LitBool>()?.value;
-            return Ok(ConfigOption::CreateModule { kw: kw, value: val });
+            return Ok(ConfigOption::CreateModule { value: val });
         }
 
         Err(input.error("Unknown configuration option"))
@@ -218,12 +184,11 @@ impl Parse for ConfigOption {
 }
 
 fn parse_comment_option(input: syn::parse::ParseStream) -> syn::Result<ConfigOption> {
-    let kw = input.parse::<kw::comment>()?;
+    _ = input.parse::<kw::comment>()?;
     _ = input.parse::<Token![=]>()?;
     if input.peek(kw::simple) {
         _ = input.parse::<kw::simple>()?;
         return Ok(ConfigOption::CommentType {
-            kw: kw,
             comment_type: CommentType::Simple,
         });
     }
@@ -231,7 +196,6 @@ fn parse_comment_option(input: syn::parse::ParseStream) -> syn::Result<ConfigOpt
         _ = input.parse::<kw::show>()?;
         _ = input.parse::<kw::values>()?;
         return Ok(ConfigOption::CommentType {
-            kw: kw,
             comment_type: CommentType::ShowValues,
         });
     }
@@ -239,7 +203,7 @@ fn parse_comment_option(input: syn::parse::ParseStream) -> syn::Result<ConfigOpt
 }
 
 fn parse_cfg_option(input: syn::parse::ParseStream) -> syn::Result<ConfigOption> {
-    let kw = input.parse::<kw::cfg>()?;
+    _ = input.parse::<kw::cfg>()?;
 
     _ = input.parse::<Token![=]>()?;
     let mut value_tokens = TS::new();
@@ -252,7 +216,6 @@ fn parse_cfg_option(input: syn::parse::ParseStream) -> syn::Result<ConfigOption>
         value_tokens.extend(std::iter::once(tt));
     }
     Ok(ConfigOption::CfgFlags {
-        kw: kw,
         flags: value_tokens,
     })
 }
@@ -269,12 +232,11 @@ impl Parse for Config {
     /// # Errors
     /// Returns a `syn::Error` if the input cannot be parsed as a valid `Config` block.
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        let kw = input.parse::<kw::cfg>()?;
+        _ = input.parse::<kw::cfg>()?;
         if input.peek(Token![=]) {
             _ = input.parse::<Token![=]>()?;
             let cfg_option = parse_cfg_option(input)?;
             Ok(Config {
-                keyword: kw,
                 options: HashMap::from([(ConfigOptionName::CfgFlags, cfg_option)]),
             }
             .merge_with_default())
@@ -292,11 +254,7 @@ impl Parse for Config {
                     ConfigOption::CreateModule { .. } => (ConfigOptionName::CreateModule, opt),
                 })
                 .collect();
-            Ok(Config {
-                keyword: kw,
-                options: map,
-            }
-            .merge_with_default())
+            Ok(Config { options: map }.merge_with_default())
         }
     }
 }

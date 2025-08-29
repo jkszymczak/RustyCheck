@@ -42,20 +42,13 @@ pub trait ToComment {
     fn to_comment(&self, comment_type: CommentType) -> Comment;
 }
 
-pub fn get_tokens_from_option<K: ToTokens>(input: &Option<K>) -> TS {
-    match input {
-        Some(i) => i.to_token_stream(),
-        None => quote! {},
-    }
-}
-
 struct IdentSeeker {
     idents: Vec<TS>,
 }
 
 impl<'ast> Visit<'ast> for IdentSeeker {
     fn visit_pat(&mut self, pat: &'ast syn::Pat) {
-        if let syn::Pat::Ident(pat_ident) = pat {
+        if let syn::Pat::Ident(_pat_ident) = pat {
             // Add the pattern identifier to the idents list
             self.idents.push(quote! { #pat });
         }
@@ -63,7 +56,7 @@ impl<'ast> Visit<'ast> for IdentSeeker {
     }
     fn visit_expr_path(&mut self, path: &'ast syn::ExprPath) {
         // dbg!(path);
-        if let Some(ident) = path.path.get_ident() {
+        if let Some(_ident) = path.path.get_ident() {
             // We assume that simple identifiers are variable references
             self.idents.push(path.to_token_stream());
         }

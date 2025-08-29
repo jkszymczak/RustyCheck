@@ -67,20 +67,6 @@ impl Parse for RustyCheck {
     }
 }
 
-/// Parses a single top-level Rust [`Item`] from the input stream
-/// and returns it as a [`TokenStream`].
-///
-/// This is a helper function for collecting non-case Rust code
-/// that appears in the macro input.
-///
-/// # Errors
-/// Returns a `syn::Error` if the input cannot be parsed as a valid Rust item.
-fn parse_rust_code_until_case(input: syn::parse::ParseStream) -> syn::Result<TS> {
-    // Parse one top-level Item
-    let item: Item = input.parse()?;
-    Ok(item.to_token_stream())
-}
-
 impl ToTokens for RustyCheck {
     /// Converts the parsed [`RustyCheck`] into a token stream
     /// that generates a `#[cfg(test)]` test module.

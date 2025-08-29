@@ -20,7 +20,6 @@ use syn::{braced, parse::Parse, Expr, Token};
 ///
 #[derive(Clone)]
 pub struct DeclarationBlock<K: Parse> {
-    pub kw: K,
     assignments: Vec<Assignment<K>>,
 }
 
@@ -154,13 +153,12 @@ where
     /// # Errors
     /// Returns a `syn::Error` if the input cannot be parsed as a declaration block.
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        let kw = input.parse::<K>()?;
+        _ = input.parse::<K>()?;
         let assignments;
         braced!(assignments in input);
         let assignments = assignments.parse_terminated(Assignment::parse, Token![,])?;
         let parsed_assignments: Vec<Assignment<K>> = assignments.into_iter().collect();
         Ok(DeclarationBlock {
-            kw: kw,
             assignments: parsed_assignments,
         })
     }
@@ -184,7 +182,7 @@ mod tests {
     use super::*;
     use proc_macro2::TokenStream;
     use quote::quote;
-    use syn::{parse, parse2, parse_quote, parse_str, Token};
+    use syn::{parse2, parse_quote, parse_str};
 
     #[test]
     fn test_parse_assignment_given() {

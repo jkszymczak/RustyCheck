@@ -1,8 +1,8 @@
 mod dsl;
 use dsl::proc_macros::rusty_check::rusty_check::RustyCheck;
 use proc_macro::TokenStream;
-use quote::{quote, ToTokens};
-use syn::{parse_macro_input, ItemTrait};
+use quote::ToTokens;
+use syn::parse_macro_input;
 
 /// RustyCheck procedural macro that processes the `rusty_check!` DSL.
 /// Follows grammar from this diagram:
