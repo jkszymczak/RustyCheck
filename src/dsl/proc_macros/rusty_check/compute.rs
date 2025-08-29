@@ -13,7 +13,6 @@ use syn::{braced, parse::Parse, Token};
 ///
 #[derive(Clone)]
 pub struct Compute {
-    keyword: Token![do],
     rust_code: TS,
 }
 
@@ -29,11 +28,10 @@ impl Parse for Compute {
     /// # Errors
     /// Returns a `syn::Error` if the input cannot be parsed as a valid `Compute` block.
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        let kw = input.parse::<Token![do]>()?;
+        _ = input.parse::<Token![do]>()?;
         let rust_code;
         braced!(rust_code in input);
         Ok(Compute {
-            keyword: kw,
             rust_code: rust_code.parse()?,
         })
     }

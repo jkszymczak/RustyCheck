@@ -19,18 +19,14 @@ use syn::{braced, parse::Parse};
 ///
 #[derive(Clone)]
 pub struct Check {
-    keyword: kw::check,
     conditions: Conditions,
-    comment: String,
     comment_type: CommentType,
     test_unstable: bool,
 }
 
 impl Check {
-    fn new(kw: kw::check, comment: String, conditions: Conditions) -> Check {
+    fn new(conditions: Conditions) -> Check {
         Check {
-            keyword: kw,
-            comment,
             conditions,
             comment_type: CommentType::default(),
             test_unstable: false,
@@ -57,12 +53,11 @@ impl Parse for Check {
     /// # Errors
     /// Returns a `syn::Error` if the input cannot be parsed as a valid `Check` block.
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        let kw = input.parse::<kw::check>()?;
+        _ = input.parse::<kw::check>()?;
         let conditions;
         braced!(conditions in input);
-        let comment = conditions.to_string();
         let conditions = conditions.parse::<Conditions>()?;
-        Ok(Check::new(kw, comment, conditions))
+        Ok(Check::new(conditions))
     }
 }
 
@@ -80,7 +75,6 @@ impl ToTokens for Check {
         if self.test_unstable {
             tokens.extend(quote! {
                  if !#conditions {
-                     //TODO remember to add condition for unstable tests to run cargo test with -- --nocapture or --show-output
                      eprintln!("Unstable test failed, {}",#comment);
                  }
             });

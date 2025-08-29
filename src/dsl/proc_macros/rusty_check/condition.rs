@@ -220,23 +220,31 @@ impl ToComment for Condition {
         let left = &self.left;
         let right = &self.right;
         let condition_string = self.to_string();
-        let left_idents = get_idents(&left.to_token_stream());
-        let right_idents = get_idents(&right.to_token_stream());
-        let values = vec![left_idents, right_idents]
-            .concat()
-            .iter()
-            .map(|i| i.to_token_stream())
-            .collect();
-        Comment {
-            string: condition_string,
-            values: values,
+        match comment_type {
+            CommentType::Simple => Comment {
+                string: condition_string,
+                values: vec![],
+            },
+            CommentType::ShowValues => {
+                let left_idents = get_idents(&left.to_token_stream());
+                let right_idents = get_idents(&right.to_token_stream());
+                let values = vec![left_idents, right_idents]
+                    .concat()
+                    .iter()
+                    .map(|i| i.to_token_stream())
+                    .collect();
+                Comment {
+                    string: condition_string,
+                    values: values,
+                }
+            }
         }
     }
 }
 #[cfg(test)]
 mod tests {
     use super::*;
-    use syn::{parse_macro_input, parse_str};
+    use syn::parse_str;
     #[test]
     fn test_parse_other_symbol() {
         let input: OtherSymbol = parse_str("less than").unwrap();

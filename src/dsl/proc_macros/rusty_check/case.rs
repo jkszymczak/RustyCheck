@@ -23,7 +23,6 @@ type Given = DeclarationBlock<kw::given>;
 ///
 #[derive(Clone)]
 pub struct Case {
-    kw: kw::case,
     ident: syn::Ident,
     config: Config,
     given: Option<Given>,
@@ -46,7 +45,7 @@ impl Case {
 /// variable declarations, computations, and checks.
 impl Parse for Case {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        let kw = input.parse::<kw::case>()?;
+        _ = input.parse::<kw::case>()?;
         let ident = input.parse::<syn::Ident>()?;
         let case;
         braced!(case in input);
@@ -67,7 +66,6 @@ impl Parse for Case {
         };
         let check = case.parse::<Check>()?;
         Ok(Case {
-            kw,
             ident,
             config,
             given,
@@ -103,7 +101,7 @@ impl ToTokens for Case {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use proc_macro2::Span;
+
     use quote::ToTokens;
     use syn::{parse_quote, parse_str, Ident};
 
@@ -136,7 +134,6 @@ mod tests {
         let given = Some(parse_str("given {x = 20}").unwrap());
         let check = parse_str("check { x equal 20 }").unwrap();
         let case = Case {
-            kw: kw::case(Span::call_site()),
             ident,
             config: Config::default(),
             given,
