@@ -14,7 +14,7 @@ use syn::{parse::Parse, Token};
 ///
 /// represents grammar from this diagram:
 ///
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Conditions {
     LoopCondition {
         /// The type of loop (e.g., `ForAny` or `ForEach`).
@@ -43,7 +43,7 @@ pub enum Conditions {
 /// Variants:
 /// - `ForAny`: A loop that checks if any element satisfies the condition.
 /// - `ForEach`: A loop that checks if all elements satisfy the condition.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum LoopType {
     ForAny,
     ForEach,
@@ -54,7 +54,7 @@ pub enum LoopType {
 /// Variants:
 /// - `Or`: Logical OR (`||`).
 /// - `And`: Logical AND (`&&`).
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum JoinType {
     Or,
     And,

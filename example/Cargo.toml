@@ -4,4 +4,4 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-rusty_check = {git = "https://github.com/jkszymczak/RustyCheck.git", version="1.0.0"}
+rusty_check = {git = "https://github.com/jkszymczak/RustyCheck.git", version="1.0.1"}

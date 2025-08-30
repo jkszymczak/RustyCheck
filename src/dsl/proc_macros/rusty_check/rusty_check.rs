@@ -10,6 +10,7 @@ use syn::{parse::Parse, Item, Token};
 /// 3. Additional Rust items that will be inserted into the generated test module.
 ///
 /// This structure is parsed directly from the macro input stream using `syn`.
+#[derive(Clone, Debug)]
 pub struct RustyCheck {
     /// Optional global configuration, starting with the `global` keyword.
     globals: Option<Global>,
@@ -20,11 +21,32 @@ pub struct RustyCheck {
 }
 
 impl RustyCheck {
-    fn get_config(&self) -> Config {
+    pub fn get_config(&self) -> Config {
         self.globals
             .as_ref()
             .map(|g| g.config.clone())
-            .unwrap_or(Config::default())
+            .unwrap_or(Config::new())
+    }
+    fn set_config(&mut self, config: &Config) {
+        match &mut self.globals {
+            Some(globals) => {
+                let mut new_globals = globals.clone();
+                new_globals.config = new_globals.config.merge_with_other(&config);
+                self.globals = Some(new_globals);
+            }
+            None => {
+                self.globals = Some(Global {
+                    config: config.clone(),
+                    consts: None,
+                    vars: None,
+                });
+            }
+        }
+    }
+    pub fn apply_config_file(self, config: &Config) -> Self {
+        let mut new = self.clone();
+        new.set_config(config);
+        new
     }
 }
 
@@ -86,7 +108,7 @@ impl ToTokens for RustyCheck {
             }) => (config.get_cfg_flags(), consts, vars),
             None => (TS::new(), &None, &None),
         };
-        let config = self.get_config().merge_with_default();
+        let config = self.get_config();
         let cases: &Vec<Case> = &self
             .cases
             .clone()
@@ -102,7 +124,6 @@ impl ToTokens for RustyCheck {
             #vars
             #(#cases)*
         };
-
         tokens.extend(match create_module {
             false => body,
             true => quote! {

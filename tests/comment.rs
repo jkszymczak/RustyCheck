@@ -1,6 +1,13 @@
 use rusty_check::rusty_check;
 
 rusty_check! {
+    global {
+        cfg {
+            unstable = true,
+            create module = true,
+            cfg = feature = "pls",
+        }
+    }
     case test_cond_comment {
         given {
             a = 2,
