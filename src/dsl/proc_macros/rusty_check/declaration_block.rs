@@ -13,12 +13,11 @@ use syn::{braced, parse::Parse, Expr, Token};
 /// - `K`: A type that implements the `Parse` trait, representing the keyword for the block.
 ///
 /// # Fields
-/// - `kw`: The keyword associated with the declaration block.
 /// - `assignments`: A list of assignments within the block.
 ///
 /// Used for representing grammar from this diagram:
 ///
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct DeclarationBlock<K: Parse> {
     assignments: Vec<Assignment<K>>,
 }
@@ -31,7 +30,7 @@ pub struct DeclarationBlock<K: Parse> {
 /// # Fields
 /// - `kw`: A phantom type to associate the assignment with the keyword type `K`.
 /// - `data`: The token stream representing the assignment.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Assignment<K: Parse> {
     kw: PhantomData<K>,
     data: TS,

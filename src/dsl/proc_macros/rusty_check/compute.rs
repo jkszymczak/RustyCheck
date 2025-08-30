@@ -6,12 +6,11 @@ use syn::{braced, parse::Parse, Token};
 ///
 /// A `Compute` block is used to define a section of Rust code that will be executed
 /// as part of the DSL. It contains:
-/// - `keyword`: The `do` keyword that introduces the block.
 /// - `rust_code`: The Rust code enclosed within the block.
 ///
 /// represents grammar from this diagram:
 ///
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Compute {
     rust_code: TS,
 }

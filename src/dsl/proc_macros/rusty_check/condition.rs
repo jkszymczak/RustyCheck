@@ -145,8 +145,6 @@ impl Parse for Condition {
         let left = input.parse::<syn::Expr>()?;
         let symbol = input.parse::<Symbol>()?;
         let right = input.parse::<syn::Expr>()?;
-        // dbg!(&right);
-        // dbg!(&left);
         Ok(Condition {
             left,
             symbol,

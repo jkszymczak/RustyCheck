@@ -17,7 +17,7 @@ use syn::{braced, parse::Parse};
 ///
 /// represents grammar from this diagram:
 ///
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Check {
     conditions: Conditions,
     comment_type: CommentType,
@@ -32,6 +32,7 @@ impl Check {
             test_unstable: false,
         }
     }
+    /// Read Check options from config
     pub fn set_options(self, config: &Config) -> Check {
         Check {
             comment_type: config.get_comment_type(),
@@ -73,9 +74,11 @@ impl ToTokens for Check {
         let conditions = &self.conditions;
         let comment = &self.conditions.to_comment(self.comment_type);
         if self.test_unstable {
+            let mut prepended_com = comment.clone();
+            prepended_com.prepend_comment_string("Unstable test failed, ");
             tokens.extend(quote! {
                  if !#conditions {
-                     eprintln!("Unstable test failed, {}",#comment);
+                     eprintln!(#prepended_com);
                  }
             });
         } else {

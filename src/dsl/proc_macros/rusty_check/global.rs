@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use super::{configure::Config, declaration_block::DeclarationBlock, keywords as kw};
 use syn::{braced, parse::Parse};
 
@@ -8,13 +10,13 @@ type Vars = DeclarationBlock<kw::vars>;
 ///
 /// A `Global` block is used to define global configurations, constants, and variables.
 /// It contains:
-/// - `kw`: The `global` keyword.
 /// - `config`: An optional configuration block.
 /// - `consts`: An optional block of constants.
 /// - `vars`: An optional block of variables.
 ///
 /// represents grammar from this diagram:
 ///
+#[derive(Clone, Debug)]
 pub struct Global {
     pub config: Config,
     pub consts: Option<Consts>,
@@ -66,7 +68,7 @@ impl Parse for Global {
             }
         }
         Ok(Global {
-            config: config.unwrap_or(Config::default()),
+            config: config.unwrap_or(Config::new()),
             consts,
             vars,
         })
