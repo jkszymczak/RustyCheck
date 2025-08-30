@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use proc_macro2::TokenStream as TS;
 use quote::{quote, ToTokens};
 use syn::{braced, parse::Parse, Token};
@@ -21,7 +23,7 @@ type Given = DeclarationBlock<kw::given>;
 ///
 /// represents grammar from this diagram:
 ///
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Case {
     ident: syn::Ident,
     config: Config,
@@ -31,6 +33,7 @@ pub struct Case {
 }
 
 impl Case {
+    /// Add configuration from global config into case config
     pub fn apply_global_config(self, global_cfg: &Config) -> Case {
         Case {
             config: self.config.merge_with_other_and_default(global_cfg),
@@ -52,7 +55,9 @@ impl Parse for Case {
         let config = if case.peek(kw::cfg) {
             case.parse::<Config>()?
         } else {
-            Config::default()
+            Config {
+                options: HashMap::new(),
+            }
         };
         let given = if case.peek(kw::given) {
             Some(case.parse::<Given>()?)
@@ -85,7 +90,10 @@ impl ToTokens for Case {
         let ident = &self.ident;
         let given = &self.given;
         let compute = &self.compute;
-        let cfg_flags: TS = self.config.get_cfg_flags();
+        let mut cfg_flags: TS = self.config.get_cfg_flags();
+        if !cfg_flags.is_empty() {
+            cfg_flags = quote! {#[cfg(#cfg_flags)]};
+        }
         let check = self.check.to_owned().set_options(&self.config);
         tokens.extend(quote! {
             #cfg_flags

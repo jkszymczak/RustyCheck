@@ -10,9 +10,16 @@ use syn::{
 
 use super::rusty_check::configure::CommentType;
 
+#[derive(Clone)]
 pub struct Comment {
     pub string: String,
     pub values: Vec<TS>,
+}
+
+impl Comment {
+    pub fn prepend_comment_string(&mut self, val: &str) {
+        self.string = val.to_owned() + self.string.as_str()
+    }
 }
 
 impl ToTokens for Comment {
