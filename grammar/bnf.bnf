@@ -1,27 +1,25 @@
-<rusty_check> ::= <cases> | " "
-<cases> ::= <case> <cases> | <case>
-<case> ::= "case " <identifier> "{ " <given> <check> " }"
-<given> ::= "given" "{ " <assignments> " }" | " "
-<assignments> ::= <assignment> "," <assignments>
-                | <assignment>
-                | " "
-<assignment> ::= <identifier> " = " <expression>
-<compute> ::=  "do" "{" <rust_code> "}"
-<check> ::= "check" "{ " <conditions> " }"
-<conditions> ::= <condition> " or " <conditions>
-               | <condition> " and " <conditions>
-               | "for any " <identifier> " in " <identifier> ", " <conditions>
-               | "for each " <identifier> " in " <identifier> ", " <conditions>
-               | <condition>
-<condition> ::= <expression> <symbol> <expression>
-<symbol> ::= " equal "
-           | <other_symbol>
-           | " equal or " <other_symbol>
-<other_symbol> ::= " less than "
-                 | " greater than "
-<expression> ::=  <rust_expression>
-                | <rust_block>
-<rust_block> ::= " rust {" <rust_code> "}"
-<rust_code> ::= " "
-<rust_expression> ::= " "
-<identifier> ::= ( [a-z] | [A-Z] ) ( [a-z] | [A-Z] )+"
+rusty_check = {imports},[globals],{case|rust_code};
+import = rust_import; 
+globals = "global","{",(cfg|global_constants|global_variables)*,"}";
+cfg = "cfg","{","}";
+setting = ("module name","=",rust_identifier)
+        | ("cfg","=",rust_cfg)
+        | ("comment","=",("show values"|"simple"))
+        | ("unstable","=",("true"|"false"))
+        | ("create module","=",("true"|"false"));
+global_constants = "consts","{",[non_mutable_assignment, {",",non_mutable_assignment}],"}";
+global_variables = "vars","{",[assignment ,{",",assignment}],"}";
+non_mutable_assignment = rust_identifier,"=",rust_expression;
+assigment = [mut],non_mutable_assignment;
+case = "case",rust_identifier,"{",[cfg],[given],[compute],check,"}";
+given = "given","{",[assignment ,{",",assignment}],"}";
+compute = "do","{",rust_code,"}";
+check = "check","{",conditions,"}";
+condition = rust_expression,symbol,rust_expression;
+symbol = "equal"
+       | other_symbol
+       | ("equal or",other_symbol);
+other_symbol = "less than" | "greater than";
+conditions = (condition,(or|and),conditions) 
+           | ("for",("any","each"),rust_identifier,"in",rust_identifier,conditions) 
+           | condition;
