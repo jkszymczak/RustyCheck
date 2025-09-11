@@ -16,8 +16,14 @@ fn read_config() -> Result<Config, Box<dyn Error>> {
     if let Some(path) = option_env!("RUSTY_CONFIG") {
         let mut p = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         p.push(path);
-        let path = p;
-        let contents = fs::read_to_string(std::path::PathBuf::from(path))?;
+        let path = p.clone();
+        let contents = match fs::read_to_string(&p) {
+            Ok(c) => c,
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+                return Err(Box::new(e));
+            }
+            Err(e) => return Err(Box::new(e)),
+        };
         let config: HashMap<String, Value> = toml::from_str(&contents)?;
         let mut options: Vec<(ConfigOptionName, ConfigOption)> = Vec::new();
         for (k, v) in config {
@@ -40,7 +46,7 @@ fn read_config() -> Result<Config, Box<dyn Error>> {
                         value: v.as_bool().unwrap(),
                     },
                 ),
-                "cfgFlags" => (
+                "cfg" => (
                     ConfigOptionName::CfgFlags,
                     ConfigOption::CfgFlags {
                         flags: parse_str(v.as_str().unwrap())?,
@@ -69,7 +75,20 @@ fn read_config() -> Result<Config, Box<dyn Error>> {
 
 #[proc_macro]
 pub fn rusty_check(input: TokenStream) -> TokenStream {
-    let config = read_config().unwrap();
-    let rusty = parse_macro_input!(input as RustyCheck).apply_config_file(&config);
-    rusty.to_token_stream().into()
+    // let config = read_config().unwrap();
+    // let rusty = parse_macro_input!(input as RustyCheck).apply_config_file(&config);
+    // rusty.to_token_stream().into()
+    match read_config() {
+        Ok(config) => {
+            let rusty = parse_macro_input!(input as RustyCheck).apply_config_file(&config);
+            rusty.to_token_stream().into()
+        }
+        Err(e) => {
+            // Emit a proper compiler error instead of panicking
+            let msg = format!("Failed to read config: {}", e);
+            syn::Error::new(proc_macro2::Span::call_site(), msg)
+                .to_compile_error()
+                .into()
+        }
+    }
 }
